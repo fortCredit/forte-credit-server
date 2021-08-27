@@ -8,7 +8,6 @@ const {
   requiredFieldValidator,
   enumTypesValidator,
 } = require('../utils/validators');
-const { USERROLES } = require('../config');
 const userManagementService = require('../services/user-service');
 
 // VALIDATE BVN
@@ -79,39 +78,31 @@ exports.register = async (req, res) => {
   try {
     logger.trace(`${correlationID}: <<<<<<-- Started register flow -->>>>>>`);
     const {
-      firstname,
-      lastName,
+      fullname,
       email,
       password,
-      country,
-      accountType,
-      bvn,
       phone,
-      profileimage,
-      role,
+      referral,
+      channel
     } = req.body;
 
     logger.trace(`${correlationID}: Run Validation on required fields `);
     await requiredFieldValidator(
-      ['password', 'email', 'phone', 'country'],
+      ['fullname', 'password', 'email', 'phone',],
       Object.keys(req.body),
       req.body,
       correlationID,
     );
-    if (role) enumTypesValidator(role, USERROLES, correlationID);
+
     logger.trace(`${correlationID}: Validation Successful`);
     const userObj = {};
-    userObj.firstname = firstname;
-    userObj.lastName = lastName;
-    userObj.country = country;
+    userObj.fullname = fullname;
     userObj.email = email.toLowerCase();
-    userObj.profileimage = profileimage;
     userObj.phone = phone;
     userObj.password = password;
-    userObj.accountType = accountType;
-    userObj.bvn = bvn;
-
-    userObj.role = role.toUpperCase();
+    userObj.referral = referral;
+    userObj.channel = channel;
+  
 
     logger.trace(`${correlationID}: >>>> Call to userManagementService.register()`);
     const responseData = await userManagementService.register(userObj, correlationID);

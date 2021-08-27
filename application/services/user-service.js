@@ -15,50 +15,6 @@ const {
 
 // const capitalizeFirstLetter = (string) => string[0].toUpperCase() + string.slice(1);
 
-// validate bvn
-exports.validateBVN = async (bvn, correlationID) => {
-  // confirm user does not exist
-  const isExist = await User.findOne({ bvn });
-  if (isExist) {
-    throw new Error('Sorry, BVN validation failed. Duplicate account suspected');
-  }
-
-  logger.trace(`${correlationID}: <<<< Exiting userManagementService.register()`);
-  const response = {};
-  response.data = {};
-  response.message = 'Register successful';
-  response.success = true;
-  return response;
-};
-
-exports.sendTokenToPhone = async (phone, correlationID) => {
-  try {
-    const token = Math.floor(100000 + Math.random() * 900000);
-    const nowDate = new Date();
-    const expiresAt = nowDate.setMinutes(nowDate.getMinutes() + 30);
-    const smsToken = {
-      token,
-      expiresAt,
-    };
-    await ValidateSms.findOneAndUpdate(
-      { phone }, { smsToken }, { upsert: true, new: true },
-    );
-    // send sms to user
-
-    const textcontent = `Hello! Your crest transfer sign up authentication code is ${token}. This expires in 5minutes`;
-    await sendsms(textcontent, phone);
-
-    logger.trace(`${correlationID}: <<<< Exiting userManagementService.registerFlow1()`);
-    const response = {};
-    response.data = {};
-    response.message = 'Validation token sent to your phone number.';
-    response.success = true;
-    return response;
-  } catch (err) {
-    throw new Error(err);
-  }
-};
-
 // register flow
 exports.register = async (userOBJ, correlationID) => {
   // confirm user does not exist
@@ -72,15 +28,13 @@ exports.register = async (userOBJ, correlationID) => {
   }
 
   const newUser = new User();
+  newUser.fullname = userOBJ.fullname;
   newUser.email = userOBJ.email.trim();
   newUser.phone = userOBJ.phone;
-  newUser.country = userOBJ.country;
-  newUser.accountType = 'INDIVIDUAL';
-  newUser.bvn = userOBJ.bvn;
-
+  newUser.referral = userOBJ.referral;
+  newUser.channel = userOBJ.channel;
   const salt = await bcrypt.genSalt(10);
   newUser.password = await bcrypt.hash(userOBJ.password, salt);
-  newUser.role = 'CUSTOMER';
   await newUser.save();
 
   logger.trace(`${correlationID}: <<<< Exiting userManagementService.register()`);

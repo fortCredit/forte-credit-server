@@ -5,10 +5,7 @@ const cors = require('cors');
 const bodyParser = require('body-parser');
 const connectDB = require('./config/connections/mongodb');
 const config = require('./config/index');
-const userRoute = require('./routes/spectrumteam.route');
-const clientRoute = require('./routes/teamclient.route');
-const idmanRoute = require('./routes/idman.route');
-
+const userRoute = require('./routes/user.route');
 const logger = require('./utils/logger');
 const correlationIDMidware = require('./middleware/correlation-id-middleware');
 const apiAccessAuthMiddleware = require('./middleware/api-access-auth');
@@ -39,9 +36,8 @@ app.get('/healthcheck', async (req, res) => {
   res.send('User Management Service is Up v1.0');
 });
 
-app.use('/v1/staff', userRoute);
-app.use('/v1/client', clientRoute);
-app.use('/v1/idman', idmanRoute);
+app.use('/v1/usermgt', userRoute);
+
 app.listen(config.PORT, () => {
   console.log(`Server is up and running on port number ${config.PORT}`);
 });
