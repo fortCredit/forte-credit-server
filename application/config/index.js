@@ -25,5 +25,5 @@ module.exports = {
   },
   USERROLES: ['CUSTOMER', 'BUSINESS', 'ADMIN'],
   ACCOUNT_TYPES: ['INDIVIDUAL', 'CORPORATE'],
-  PROJECTNAME: 'Crest Transfer',
+  PROJECTNAME: 'MYFORTVEST.NG',
 };

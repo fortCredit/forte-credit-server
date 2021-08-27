@@ -9,33 +9,15 @@ const mailScheduler = require('../utils/mailer');
 const autoIncrementModelID = require('./Counter.model');
 const sendInbox = require('../services/inbox-service').addInbox;
 
-const { ROLES, PROJECTNAME, ACCOUNT_TYPES } = require('../config/index');
+const { PROJECTNAME } = require('../config/index');
 
 const UserSchema = mongoose.Schema({
   userID: {
     type: String,
   },
-  firstName: {
+  fullname: {
     type: String,
     required: true,
-  },
-  lastName: {
-    type: String,
-    required: true,
-
-  },
-  country: {
-    type: String,
-    required: true,
-
-  },
-  accountType: {
-    type: String,
-    enum: ACCOUNT_TYPES,
-  },
-  bvn: {
-    type: String,
-    max: 10,
   },
   email: {
     type: String,
@@ -51,20 +33,12 @@ const UserSchema = mongoose.Schema({
     type: String,
     required: true,
   },
-  profileimage: {
+  referral: {
     type: String,
   },
-  role: {
+  channel: {
     type: String,
-    enum: ROLES,
-    default: 'CUSTOMER',
-    uppercase: true,
   },
-  // company: [{
-  //   type: Schema.Types.ObjectId,
-  //   ref: 'company',
-  //   required: true,
-  // }],
   deleted: {
     type: Boolean,
     default: false,
@@ -78,14 +52,14 @@ UserSchema.pre('save', function (next) {
     next();
     return;
   }
-  autoIncrementModelID('applicationCount', 'userID', this, next, 'BIDNG');
+  autoIncrementModelID('applicationCount', 'userID', this, next, 'FTV');
 });
 UserSchema.post('save', function (doc, next) {
   // schedule mail service
   const templateType = 'WELCOMEMAIL';
   mailScheduler.sendMail(
     {
-      fullName: this.fullName.split(' ')[0] || '',
+      fullname: this.fullname.split(' ')[0] || '',
       templateType,
       userID: this._id.toString(),
       email: this.email,
