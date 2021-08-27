@@ -38,9 +38,6 @@ app.get('/healthcheck', async (req, res) => {
 
 app.use('/v1/usermgt', userRoute);
 
-
-
-
 app.listen(config.PORT, () => {
   console.log(`Server is up and running on port number ${config.PORT}`);
 });
