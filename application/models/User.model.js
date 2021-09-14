@@ -2,14 +2,14 @@
 /* eslint-disable no-console */
 /* eslint-disable no-underscore-dangle */
 const mongoose = require('mongoose');
+const jwt = require('jsonwebtoken');
+const {JWTSECRET} = require('../config');
 
 // const { Schema } = mongoose;
 
 const mailScheduler = require('../utils/mailer');
 const autoIncrementModelID = require('./Counter.model');
 const sendInbox = require('../services/inbox-service').addInbox;
-
-const { PROJECTNAME } = require('../config/index');
 
 const UserSchema = mongoose.Schema({
   userID: {
@@ -39,6 +39,9 @@ const UserSchema = mongoose.Schema({
   channel: {
     type: String,
   },
+  token: {
+    type: String,
+  },
   deleted: {
     type: Boolean,
     default: false,
@@ -65,15 +68,19 @@ UserSchema.post('save', function (doc, next) {
       email: this.email,
     },
   );
-  const data = {
-    body: {
-      title: `Welcome to ${PROJECTNAME}`,
-      body: `You are welcome to ${PROJECTNAME}. A team of brilliant people. You are here because you are simply the brightest and best`,
-      user: this._id,
-    },
-  };
-  sendInbox(data, {});
   next();
 });
 
+UserSchema.methods.generateAuthToken = async function () {
+  // Generate an auth token for the user
+  try {
+    const user = this;
+    const token = jwt.sign({ _id: user._id }, JWTSECRET);
+    user.token = token;
+    await user.save();
+    return user;
+  } catch (err) {
+    return console.log(err);
+  }
+};
 module.exports = mongoose.model('user', UserSchema);

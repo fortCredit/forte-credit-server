@@ -5,6 +5,7 @@ const User = require('../models/User.model');
 const ResetPassword = require('../models/PasswordResets.model');
 const mailScheduler = require('../utils/mailer');
 const logger = require('../utils/logger');
+const authtoken = require('../utils/authtoken');
 const ValidateSms = require('../models/validationToken.model');
 const { sendsms } = require('../utils/smsservice');
 const {
@@ -36,10 +37,11 @@ exports.register = async (userOBJ, correlationID) => {
   const salt = await bcrypt.genSalt(10);
   newUser.password = await bcrypt.hash(userOBJ.password, salt);
   await newUser.save();
+  const regUser = await newUser.generateAuthToken();
 
   logger.trace(`${correlationID}: <<<< Exiting userManagementService.register()`);
   const response = {};
-  response.data = newUser;
+  response.data = regUser;
   response.message = 'Register successful';
   response.success = true;
   return response;
@@ -56,7 +58,7 @@ exports.login = async function (loginCred, correlationID) {
   if (!isMatch) {
     throw new InvalidCredentialsError('Password mismatch');
   }
-
+await authtoken.updateToken(user._id);
   user.password = undefined;
   user.createdAt = undefined;
   user.updateAt = undefined;
