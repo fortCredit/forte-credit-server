@@ -6,8 +6,9 @@ const ResetPassword = require('../models/PasswordResets.model');
 const mailScheduler = require('../utils/mailer');
 const logger = require('../utils/logger');
 const authtoken = require('../utils/authtoken');
-const ValidateSms = require('../models/validationToken.model');
-const { sendsms } = require('../utils/smsservice');
+// const ValidateSms = require('../models/validationToken.model');
+// const { sendsms } = require('../utils/smsservice');
+const payStackService = require('./paystack-service');
 const {
   ExpiredTokenError,
   UserAlreadyExistsError,
@@ -58,7 +59,7 @@ exports.login = async function (loginCred, correlationID) {
   if (!isMatch) {
     throw new InvalidCredentialsError('Password mismatch');
   }
-await authtoken.updateToken(user._id);
+  await authtoken.updateToken(user._id);
   user.password = undefined;
   user.createdAt = undefined;
   user.updateAt = undefined;
@@ -212,4 +213,32 @@ exports.getAllUsers = async (correlationID) => {
   response.message = 'User retrieved successfully';
   response.success = true;
   return response;
+};
+
+exports.addBankDetails = async (userid, bankDetails, correlationID) => {
+  try {
+    const { accountNumber, bvn, bankCode } = bankDetails;
+    const bvnObj = {
+      bvn,
+      account_number: accountNumber,
+      bank_code: bankCode,
+    };
+    const bvnVerification = await payStackService.verifyBVN(bvnObj, correlationID);
+    const userObj = {};
+    if (bvnVerification) {
+      if (bvnVerification.is_blacklisted) throw new Error('Sorry! the account number is blacklisted, you cannot continue with this process');
+      userObj.bvn = bvnVerification.bvn;
+      userObj.accountNo = bvnVerification.account_no;
+      userObj.bvn = bvnVerification.bvn;
+    }
+    const updateUserProfile = await User.findOneAndUpdate(userid, { accountRecord: bankDetails });
+    logger.trace(`${correlationID}: <<<< Exiting userManagementService.getAlUsers()`);
+    const response = {};
+    response.data = updateUserProfile;
+    response.message = 'Bank details added successfully';
+    response.success = true;
+    return response;
+  } catch (err) {
+    throw new Error(err.message);
+  }
 };
