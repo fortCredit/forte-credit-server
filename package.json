@@ -5,19 +5,27 @@
   "main": ".eslintrc.js",
   "dependencies": {
     "aws-sdk": "^2.977.0",
+    "axios": "^0.21.4",
     "bcryptjs": "^2.4.3",
     "body-parser": "^1.19.0",
     "cors": "^2.8.5",
     "dotenv": "^10.0.0",
     "express": "^4.17.1",
     "got": "^11.8.2",
+    "jsonwebtoken": "^8.5.1",
     "log4js": "^6.3.0",
     "mongoose": "^5.13.7"
   },
-  "devDependencies": {},
+  "devDependencies": {
+    "eslint": "^7.32.0",
+    "eslint-config-airbnb": "~18.2.1",
+    "eslint-config-airbnb-base": "^14.2.1",
+    "eslint-plugin-import": "^2.24.2"
+  },
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "node application/server.js"
+    "start": "node application/server.js",
+    "lint": "eslint --ext .js,.jsx ."
   },
   "repository": {
     "type": "git",
