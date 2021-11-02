@@ -223,15 +223,18 @@ exports.addBankDetails = async (userid, bankDetails, correlationID) => {
       account_number: accountNumber,
       bank_code: bankCode,
     };
-    const bvnVerification = await payStackService.verifyBVN(bvnObj, correlationID);
+    const bvnVerification = (await payStackService.verifyBVN(bvnObj, correlationID)).data;
     const userObj = {};
-    if (bvnVerification) {
-      if (bvnVerification.is_blacklisted) throw new Error('Sorry! the account number is blacklisted, you cannot continue with this process');
-      userObj.bvn = bvnVerification.bvn;
-      userObj.accountNo = bvnVerification.account_no;
-      userObj.bvn = bvnVerification.bvn;
-    }
-    const updateUserProfile = await User.findOneAndUpdate(userid, { accountRecord: bankDetails });
+    if (bvnVerification.status === true) {
+      if (bvnVerification.data.is_blacklisted) throw new Error('Sorry! the account number is blacklisted, you cannot continue with this process');
+      userObj.bvn = bvnVerification.data.bvn;
+      userObj.accountNo = bvnVerification.data.account_no;
+    } else throw new Error('BVN verification failed.');
+    const updateUserProfile = await User.findOneAndUpdate(
+      { _id: userid },
+      { accountRecord: bankDetails },
+      { new: true },
+    );
     logger.trace(`${correlationID}: <<<< Exiting userManagementService.getAlUsers()`);
     const response = {};
     response.data = updateUserProfile;

@@ -42,6 +42,7 @@ const FVSchema = mongoose.Schema({
   investMentEndDate: {
     type: Date,
   },
+  nextInvestmentDate: Date,
   status: {
     type: String,
     uppercase: true,

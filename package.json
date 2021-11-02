@@ -14,7 +14,8 @@
     "got": "^11.8.2",
     "jsonwebtoken": "^8.5.1",
     "log4js": "^6.3.0",
-    "mongoose": "^5.13.7"
+    "mongoose": "^5.13.7",
+    "node-cron": "^3.0.0"
   },
   "devDependencies": {
     "eslint": "^7.32.0",

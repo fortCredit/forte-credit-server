@@ -24,7 +24,7 @@ const addFortvestPlan = async (req, res) => {
 
     logger.trace(`${correlationID}: Run Validation on required fields `);
     await requiredFieldValidator(
-      ['planType', 'isAutomated', 'frequency', 'amount', 'investmentLength'],
+      ['planType', 'isAutomated', 'frequency', 'amount', 'investmentLength', 'startDate'],
       Object.keys(req.body),
       req.body,
       correlationID,
@@ -35,14 +35,16 @@ const addFortvestPlan = async (req, res) => {
       frequency,
       amount,
       investmentLength,
+      startDate,
     } = req.body;
     logger.trace(`${correlationID}: Validation Successful`);
     const planObj = {};
-    planObj.planType = planType;
+    planObj.planType = planType.toUpperCase();
     planObj.isAutomated = isAutomated;
     planObj.frequency = frequency;
     planObj.amount = amount;
     planObj.investmentLength = investmentLength;
+    planObj.nextInvestmentDate = new Date(startDate);
     planObj.user = user;
     const responseData = await fortVestService.addFortvestPlan(planObj, correlationID);
 
