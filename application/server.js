@@ -10,8 +10,7 @@ const fortvestRoute = require('./routes/fortvest.route');
 const logger = require('./utils/logger');
 const correlationIDMidware = require('./middleware/correlation-id-middleware');
 const apiAccessAuthMiddleware = require('./middleware/api-access-auth');
-// Connect Database
-connectDB();
+const { job } = require('./services/jobs');
 
 const app = express();
 app.use(cors());
@@ -42,4 +41,9 @@ app.use('/v1/fortvest', fortvestRoute);
 
 app.listen(config.PORT, () => {
   console.log(`Server is up and running on port number ${config.PORT}`);
+
+  // Connect Database
+  connectDB(() => {
+    job();
+  });
 });

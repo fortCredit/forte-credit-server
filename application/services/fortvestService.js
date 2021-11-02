@@ -13,9 +13,20 @@ const addFortvestPlan = async (investmentObj, correlationID) => {
   logger.trace(`${correlationID}: <<<< Entering fortVestService.${getFuncName()}`);
 
   // ensure user does not have a fortVestPlan before
-  const { user } = investmentObj;
-  const getUserPlan = await Fortvest.findOne({ user, status: 'ACTIVE' });
-  if (getUserPlan) throw new Error('Sorry! You already have an active Fortvest plan');
+  const {
+    user, planType, amount, investmentLength,
+  } = investmentObj;
+  const getUserPlan = await Fortvest.findOne({ user, planType, status: 'ACTIVE' });
+  if (getUserPlan) throw new Error(`Sorry! You already have an active ${planType.toLowerCase()} plan`);
+  if (planType === 'FIXED-INVEST') {
+    if (amount < 50000000) throw new Error('Sorry, the minimum deposit amount for fixed invest is N500,000.00');
+    if (investmentLength < 90) throw new Error('Sorry, the minimum duration for fixed invest is 90 days');
+  } else if (planType === 'TARGET-INVEST') {
+    if (amount < 50000) throw new Error('Sorry, the minimum deposit amount for target invest is N500.00');
+  } else if (planType === 'HIGH-YIELD') {
+    if (amount < 10000000) throw new Error('Sorry, the minimum deposit amount for high yield is N100,000.00');
+    if (investmentLength < 365) throw new Error('Sorry, the minimum duration for high yield is 1 year');
+  }
   const newPlan = new Fortvest(investmentObj);
   await newPlan.save();
   // TODO: Perform card transaction to activate card for recurring transaction

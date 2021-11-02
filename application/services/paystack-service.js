@@ -18,9 +18,7 @@ exports.verifyBVN = async (reqBody, correlationID) => {
     logger.trace(
       `${correlationID}: >>>> call to  paystack api `,
     );
-
     const paystackBvnResponse = (await APISERVICE.requestCustom(correlationID, 'PAYSTACK', url, headers, reqBody, 'post'));
-
     if (!paystackBvnResponse.status) {
       throw new Error('An error occured when initializing transaction');
     }
