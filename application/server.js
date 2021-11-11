@@ -6,11 +6,13 @@ const bodyParser = require('body-parser');
 const connectDB = require('./config/connections/mongodb');
 const config = require('./config/index');
 const userRoute = require('./routes/user.route');
+const fortvestRoute = require('./routes/fortvest.route');
+const transactionRoutes = require('./routes/transaction.route');
+const cardRoutes = require('./routes/card.route');
 const logger = require('./utils/logger');
 const correlationIDMidware = require('./middleware/correlation-id-middleware');
 const apiAccessAuthMiddleware = require('./middleware/api-access-auth');
-// Connect Database
-connectDB();
+const { job } = require('./services/jobs');
 
 const app = express();
 app.use(cors());
@@ -36,8 +38,16 @@ app.get('/healthcheck', async (req, res) => {
   res.send('User Management Service is Up v1.0');
 });
 
-app.use('/v1/usermgt', userRoute);
+app.use('/v1/user', userRoute);
+app.use('/v1/fortvest', fortvestRoute);
+app.use('/v1/transaction', transactionRoutes);
+app.use('/v1/card', cardRoutes);
 
 app.listen(config.PORT, () => {
   console.log(`Server is up and running on port number ${config.PORT}`);
+
+  // Connect Database
+  connectDB(() => {
+    job();
+  });
 });

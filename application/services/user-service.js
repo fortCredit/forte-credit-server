@@ -5,8 +5,10 @@ const User = require('../models/User.model');
 const ResetPassword = require('../models/PasswordResets.model');
 const mailScheduler = require('../utils/mailer');
 const logger = require('../utils/logger');
-const ValidateSms = require('../models/validationToken.model');
-const { sendsms } = require('../utils/smsservice');
+const authtoken = require('../utils/authtoken');
+// const ValidateSms = require('../models/validationToken.model');
+// const { sendsms } = require('../utils/smsservice');
+const payStackService = require('./transaction-service');
 const {
   ExpiredTokenError,
   UserAlreadyExistsError,
@@ -36,10 +38,11 @@ exports.register = async (userOBJ, correlationID) => {
   const salt = await bcrypt.genSalt(10);
   newUser.password = await bcrypt.hash(userOBJ.password, salt);
   await newUser.save();
+  const regUser = await newUser.generateAuthToken();
 
   logger.trace(`${correlationID}: <<<< Exiting userManagementService.register()`);
   const response = {};
-  response.data = newUser;
+  response.data = regUser;
   response.message = 'Register successful';
   response.success = true;
   return response;
@@ -56,7 +59,7 @@ exports.login = async function (loginCred, correlationID) {
   if (!isMatch) {
     throw new InvalidCredentialsError('Password mismatch');
   }
-
+  await authtoken.updateToken(user._id);
   user.password = undefined;
   user.createdAt = undefined;
   user.updateAt = undefined;
@@ -210,4 +213,35 @@ exports.getAllUsers = async (correlationID) => {
   response.message = 'User retrieved successfully';
   response.success = true;
   return response;
+};
+
+exports.addBankDetails = async (userid, bankDetails, correlationID) => {
+  try {
+    const { accountNumber, bvn, bankCode } = bankDetails;
+    const bvnObj = {
+      bvn,
+      account_number: accountNumber,
+      bank_code: bankCode,
+    };
+    const bvnVerification = (await payStackService.verifyBVN(bvnObj, correlationID)).data;
+    const userObj = {};
+    if (bvnVerification.status === true) {
+      if (bvnVerification.data.is_blacklisted) throw new Error('Sorry! the account number is blacklisted, you cannot continue with this process');
+      userObj.bvn = bvnVerification.data.bvn;
+      userObj.accountNo = bvnVerification.data.account_no;
+    } else throw new Error('BVN verification failed.');
+    const updateUserProfile = await User.findOneAndUpdate(
+      { _id: userid },
+      { accountRecord: bankDetails },
+      { new: true },
+    );
+    logger.trace(`${correlationID}: <<<< Exiting userManagementService.getAlUsers()`);
+    const response = {};
+    response.data = updateUserProfile;
+    response.message = 'Bank details added successfully';
+    response.success = true;
+    return response;
+  } catch (err) {
+    throw new Error(err.message);
+  }
 };
