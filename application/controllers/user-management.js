@@ -6,72 +6,12 @@ const logger = require('../utils/logger');
 
 const {
   requiredFieldValidator,
-  enumTypesValidator,
 } = require('../utils/validators');
 const userManagementService = require('../services/user-service');
 
 // VALIDATE BVN
 // SEND TOKEN TO BVN REG NUM
 // ACTUAL REGISTER
-exports.validateBVN = async function (req, res) {
-  const correlationID = req.header('x-correlation-id');
-  try {
-    logger.trace(`${correlationID}: <<<<<<-- Started BVN validation flow-->>>>>>`);
-    const { bvn } = req.body;
-
-    logger.trace(`${correlationID}: Validate required fields`);
-    await requiredFieldValidator(
-      ['bvn'],
-      Object.keys(req.body),
-      req.body,
-      correlationID,
-    );
-    logger.trace(`${correlationID}:Required Validation successful`);
-
-    logger.trace(`${correlationID}:>>>>  Call to userManagementService.validateBVN()`);
-    const loginUser = await userManagementService.validateBVN(bvn, correlationID);
-    logger.trace(` ${correlationID}: Token Valiated is not free`);
-    return res.json(response.success(loginUser.data, loginUser.message));
-  } catch (err) {
-    logger.debug(`${correlationID}: ${err}`);
-    const error = {};
-    let message = '';
-    err.data ? (error.data = err.data) : (error.data = {});
-    err.name ? (error.name = err.name) : (error.name = 'UnknownError');
-    err.message ? (message = err.message) : (message = 'Something Failed');
-    return res.json(response.error(error, message));
-  }
-};
-
-exports.sendTokenToPhone = async function (req, res) {
-  const correlationID = req.header('x-correlation-id');
-  try {
-    logger.trace(`${correlationID}: <<<<<<-- Send token to phone flow-->>>>>>`);
-    const { phone } = req.body;
-
-    logger.trace(`${correlationID}: Validate required fields`);
-    await requiredFieldValidator(
-      ['phone'],
-      Object.keys(req.body),
-      req.body,
-      correlationID,
-    );
-    logger.trace(`${correlationID}:Required Validation successful`);
-
-    logger.trace(`${correlationID}:>>>>  Call to userManagementService.sendTokenToPhone()`);
-    const sendDatatoAgent = await userManagementService.sendTokenToPhone(phone, correlationID);
-    logger.trace(` ${correlationID}: Token sent successfully`);
-    return res.json(response.success(sendDatatoAgent.data, sendDatatoAgent.message));
-  } catch (err) {
-    logger.debug(`${correlationID}: ${err}`);
-    const error = {};
-    let message = '';
-    err.data ? (error.data = err.data) : (error.data = {});
-    err.name ? (error.name = err.name) : (error.name = 'UnknownError');
-    err.message ? (message = err.message) : (message = 'Something Failed');
-    return res.json(response.error(error, message));
-  }
-};
 
 exports.register = async (req, res) => {
   const correlationID = req.header('x-correlation-id');
@@ -83,12 +23,12 @@ exports.register = async (req, res) => {
       password,
       phone,
       referral,
-      channel
+      channel,
     } = req.body;
 
     logger.trace(`${correlationID}: Run Validation on required fields `);
     await requiredFieldValidator(
-      ['fullname', 'password', 'email', 'phone',],
+      ['fullname', 'password', 'email', 'phone'],
       Object.keys(req.body),
       req.body,
       correlationID,
@@ -102,7 +42,6 @@ exports.register = async (req, res) => {
     userObj.password = password;
     userObj.referral = referral;
     userObj.channel = channel;
-  
 
     logger.trace(`${correlationID}: >>>> Call to userManagementService.register()`);
     const responseData = await userManagementService.register(userObj, correlationID);
@@ -288,7 +227,7 @@ exports.getUser = async function (req, res) {
 
 exports.updateProfile = async function (req, res) {
   const correlationID = req.header('x-correlation-id');
-  const userid = req.header('x-user-id');
+  const userid = req.user._id;
   if (req.body) {
     try {
       logger.trace(`${correlationID}: <<<<<<--Started update profile flow-->>>>>>`);
@@ -318,6 +257,44 @@ exports.updateProfile = async function (req, res) {
       detail: 'Kindly check the documentation for this API',
     };
     const message = 'Failed, Bad Request';
+    return res.json(response.error(error, message));
+  }
+};
+
+exports.updateAccountDetails = async function (req, res) {
+  const correlationID = req.header('x-correlation-id');
+
+  try {
+    const userid = req.user._id;
+
+    logger.trace(`${correlationID}: <<<<<<--Started update bank details flow-->>>>>>`);
+    await requiredFieldValidator(
+      ['accountNumber', 'bvn', 'bankCode', 'bankName'],
+      Object.keys(req.body),
+      correlationID,
+    );
+    logger.trace(`${correlationID}: Validation successful`);
+    const {
+      accountNumber, bankName, bvn, bankCode,
+    } = req.body;
+      // build update object
+    const bankObj = {};
+    bankObj.accountNumber = accountNumber;
+    bankObj.bankName = bankName;
+    bankObj.bvn = bvn;
+    bankObj.bankCode = bankCode;
+
+    logger.trace(`${correlationID}: >>>> Call to userManagementService.updateAccountDetails()`);
+    const serviceResponse = await
+    userManagementService.addBankDetails(userid, bankObj, correlationID);
+    return res.json(response.success(serviceResponse.data, serviceResponse.message));
+  } catch (err) {
+    logger.trace(`${correlationID}: ${err}`);
+    const error = {};
+    let message = '';
+    err.data ? error.data = err.data : error.data = {};
+    err.name ? error.name = err.name : error.name = 'UnknownError';
+    err.message ? message = err.message : message = 'Something Failed';
     return res.json(response.error(error, message));
   }
 };

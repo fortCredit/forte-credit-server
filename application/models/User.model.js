@@ -3,19 +3,19 @@
 /* eslint-disable no-underscore-dangle */
 const mongoose = require('mongoose');
 const jwt = require('jsonwebtoken');
-const {JWTSECRET} = require('../config');
+const { JWTSECRET } = require('../config');
 
 // const { Schema } = mongoose;
 
 const mailScheduler = require('../utils/mailer');
 const autoIncrementModelID = require('./Counter.model');
-const sendInbox = require('../services/inbox-service').addInbox;
+// const sendInbox = require('../services/inbox-service').addInbox;
 
 const UserSchema = mongoose.Schema({
   userID: {
     type: String,
   },
-  fullname: {
+  fullName: {
     type: String,
     required: true,
   },
@@ -42,6 +42,35 @@ const UserSchema = mongoose.Schema({
   token: {
     type: String,
   },
+  gender: {
+    type: String,
+    enum: ['MALE', 'FEMALE'],
+  },
+  dateOfBirth: Date,
+  homeAddress: String,
+  accountRecord: {
+    accountNumber: String,
+    bankName: String,
+    bankCode: String,
+    bvn: String,
+  },
+  profileImage: String,
+  authorization: {
+    authorization_code: String,
+    bin: String,
+    last4: String,
+    exp_month: String,
+    exp_year: String,
+    channel: String,
+    card_type: String,
+    bank: String,
+    country_code: String,
+    brand: String,
+    reusable: Boolean,
+    signature: String,
+    account_name: String,
+  },
+  authEmail: String,
   deleted: {
     type: Boolean,
     default: false,
