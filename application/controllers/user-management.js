@@ -232,14 +232,14 @@ exports.updateProfile = async function (req, res) {
     try {
       logger.trace(`${correlationID}: <<<<<<--Started update profile flow-->>>>>>`);
       const {
-        profileimage, gender, dob, address,
+        profileimage, gender, dateOfBirth, homeAddress,
       } = req.body;
       // build update object
       const updateObj = {};
       if (profileimage) updateObj.profileimage = profileimage;
       if (gender) updateObj.gender = gender;
-      if (dob) updateObj.dob = new Date(dob);
-      if (address) updateObj.address = address;
+      if (dateOfBirth) updateObj.dateOfBirth = new Date(dateOfBirth);
+      if (homeAddress) updateObj.homeAddress = homeAddress;
       logger.trace(`${correlationID}: >>>> Call to userManagementService.updateProfile()`);
       const serviceResponse = await
       userManagementService.updateProfile(userid, updateObj, correlationID);
