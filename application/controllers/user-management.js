@@ -238,7 +238,7 @@ exports.updateProfile = async function (req, res) {
       const updateObj = {};
       if (profileimage) updateObj.profileimage = profileimage;
       if (gender) updateObj.gender = gender;
-      if (dateOfBirth) updateObj.dateOfBirth = new Date(dateOfBirth);
+      if (dateOfBirth) updateObj.dateOfBirth = dateOfBirth;
       if (homeAddress) updateObj.homeAddress = homeAddress;
       logger.trace(`${correlationID}: >>>> Call to userManagementService.updateProfile()`);
       const serviceResponse = await
