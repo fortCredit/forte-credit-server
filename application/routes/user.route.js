@@ -7,10 +7,7 @@ const userController = require('../controllers/user-management');
 router.post('/register', userController.register);
 router.post('/login', userController.login);
 router.post('/password/reset/request', userController.resetRequest);
- router.post(
-  '/password/reset/validatetoken',
-  userController.validateToken,
-);
+ router.post('/password/reset/validatetoken', userController.validateToken);
 router.post('/password/reset', userController.resetPassword);
 router.post('/profile/update', userController.updateProfile);
 //router.post('/get', userController.getUser);
