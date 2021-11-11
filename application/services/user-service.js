@@ -8,7 +8,7 @@ const logger = require('../utils/logger');
 const authtoken = require('../utils/authtoken');
 // const ValidateSms = require('../models/validationToken.model');
 // const { sendsms } = require('../utils/smsservice');
-const payStackService = require('./paystack-service');
+const payStackService = require('./transaction-service');
 const {
   ExpiredTokenError,
   UserAlreadyExistsError,

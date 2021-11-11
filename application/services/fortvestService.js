@@ -1,6 +1,7 @@
 /* eslint-disable no-underscore-dangle */
 /* eslint-disable func-names */
 const Fortvest = require('../models/Fortvest.model');
+const Transaction = require('../models/Transaction.model');
 // const mailScheduler = require('../utils/mailer');
 const logger = require('../utils/logger');
 
@@ -14,7 +15,7 @@ const addFortvestPlan = async (investmentObj, correlationID) => {
 
   // ensure user does not have a fortVestPlan before
   const {
-    user, planType, amount, investmentLength,
+    user, planType, amount, investmentLength, nextInvestmentDate,
   } = investmentObj;
   const getUserPlan = await Fortvest.findOne({ user, planType, status: 'ACTIVE' });
   if (getUserPlan) throw new Error(`Sorry! You already have an active ${planType.toLowerCase()} plan`);
@@ -27,7 +28,10 @@ const addFortvestPlan = async (investmentObj, correlationID) => {
     if (amount < 10000000) throw new Error('Sorry, the minimum deposit amount for high yield is N100,000.00');
     if (investmentLength < 365) throw new Error('Sorry, the minimum duration for high yield is 1 year');
   }
+  const startDate = new Date(nextInvestmentDate);
+  const investMentEndDate = startDate.setDate(startDate.getDate() + (investmentLength));
   const newPlan = new Fortvest(investmentObj);
+  newPlan.investMentEndDate = investMentEndDate;
   await newPlan.save();
   // TODO: Perform card transaction to activate card for recurring transaction
   logger.trace(`${correlationID}: <<<< Exiting fortVestService.${getFuncName()}`);
@@ -40,7 +44,7 @@ const addFortvestPlan = async (investmentObj, correlationID) => {
 
 const getFortvestPlan = async (user, correlationID) => {
   logger.trace(`${correlationID}: <<<< Entering fortVestService.${getFuncName}`);
-  const getUserPlan = await Fortvest.findOne({ user, status: 'ACTIVE' });
+  const getUserPlan = await Fortvest.find({ user });
   logger.trace(`${correlationID}: <<<< Exiting fortVestService.${getFuncName}`);
   const response = {};
   response.data = getUserPlan;
@@ -48,7 +52,19 @@ const getFortvestPlan = async (user, correlationID) => {
   response.success = true;
   return response;
 };
+
+const getPlanTranxHistory = async (user, investment, correlationID) => {
+  logger.trace(`${correlationID}: <<<< Entering fortVestService.${getFuncName}`);
+  const getTransactonHistory = await Transaction.find({ user, investment });
+  logger.trace(`${correlationID}: <<<< Exiting fortVestService.${getFuncName}`);
+  const response = {};
+  response.data = getTransactonHistory;
+  response.message = 'Transaction History retrieved successfully';
+  response.success = true;
+  return response;
+};
 module.exports = {
   addFortvestPlan,
   getFortvestPlan,
+  getPlanTranxHistory,
 };

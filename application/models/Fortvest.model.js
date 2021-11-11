@@ -17,6 +17,11 @@ const FVSchema = mongoose.Schema({
     ref: 'user',
     required: true,
   },
+  card: {
+    type: Schema.Types.ObjectId,
+    ref: 'card',
+    required: true,
+  },
   planType: {
     type: String,
     enum: FORTVESTPLANS,
@@ -37,12 +42,16 @@ const FVSchema = mongoose.Schema({
     type: Number,
   },
   investmentLength: {
-    type: Number, // this is expected in weeks
+    type: Number, // this is expected in days
   },
   investMentEndDate: {
     type: Date,
   },
   nextInvestmentDate: Date,
+  toRetry: {
+    type: Boolean,
+    default: false,
+  },
   status: {
     type: String,
     uppercase: true,

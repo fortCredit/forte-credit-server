@@ -24,7 +24,7 @@ const addFortvestPlan = async (req, res) => {
 
     logger.trace(`${correlationID}: Run Validation on required fields `);
     await requiredFieldValidator(
-      ['planType', 'isAutomated', 'frequency', 'amount', 'investmentLength', 'startDate'],
+      ['planType', 'isAutomated', 'frequency', 'amount', 'investmentLength', 'startDate', 'card'],
       Object.keys(req.body),
       req.body,
       correlationID,
@@ -35,6 +35,7 @@ const addFortvestPlan = async (req, res) => {
       frequency,
       amount,
       investmentLength,
+      card,
       startDate,
     } = req.body;
     logger.trace(`${correlationID}: Validation Successful`);
@@ -46,9 +47,10 @@ const addFortvestPlan = async (req, res) => {
     planObj.investmentLength = investmentLength;
     planObj.nextInvestmentDate = new Date(startDate);
     planObj.user = user;
+    planObj.card = card;
     const responseData = await fortVestService.addFortvestPlan(planObj, correlationID);
 
-    logger.trace(`${correlationID}: FortVest Plan added Successfully.`);
+    logger.trace(`${correlationID}: ${responseData}`);
     return res.json(response.success(responseData.data, responseData.message));
   } catch (err) {
     logger.debug(`${correlationID}: ${err}`);
@@ -79,7 +81,35 @@ const getFortvestPlan = async (req, res) => {
     return res.json(response.error(error, message));
   }
 };
+
+const getPlanTranxHistory = async (req, res) => {
+  const correlationID = req.header('x-correlation-id');
+  const user = req.user._id;
+  try {
+    await requiredFieldValidator(
+      ['investment'],
+      Object.keys(req.body),
+      req.body,
+      correlationID,
+    );
+    const { investment } = req.body;
+
+    const responseData = await fortVestService.getPlanTranxHistory(user, investment, correlationID);
+
+    logger.trace(`${correlationID}: ${responseData.message}`);
+    return res.json(response.success(responseData.data, responseData.message));
+  } catch (err) {
+    logger.debug(`${correlationID}: ${err}`);
+    const error = {};
+    let message = '';
+    err.data ? (error.data = err.data) : (error.data = {});
+    err.name ? (error.name = err.name) : (error.name = 'UnknownError');
+    err.message ? (message = err.message) : (message = 'Something Failed');
+    return res.json(response.error(error, message));
+  }
+};
 module.exports = {
   addFortvestPlan,
   getFortvestPlan,
+  getPlanTranxHistory,
 };

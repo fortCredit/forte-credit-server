@@ -5,7 +5,7 @@ const mongoose = require('mongoose');
 
 const { Schema } = mongoose;
 const autoIncrementModelID = require('./Counter.model');
-const { TRANSACTIONSTATUS } = require('../config/app');
+const { TRANSACTIONSTATUS, TRANSACTIONDESC } = require('../config/app');
 
 const TransactionSchema = mongoose.Schema({
   transactionID: {
@@ -18,6 +18,11 @@ const TransactionSchema = mongoose.Schema({
   user: {
     type: String,
     required: true,
+  },
+  email: String,
+  description: {
+    type: String,
+    enum: TRANSACTIONDESC,
   },
   transactionType: {
     type: String,
@@ -52,6 +57,11 @@ TransactionSchema.pre('save', function (next) {
     return;
   }
   autoIncrementModelID('applicationCount', 'transactionID', this, next, 'FRTVST');
+});
+
+TransactionSchema.pre('find', function () {
+  this.where({ deleted: false });
+  this.sort({ createdAt: -1 });
 });
 
 module.exports = mongoose.model('transaction', TransactionSchema);

@@ -7,6 +7,8 @@ const connectDB = require('./config/connections/mongodb');
 const config = require('./config/index');
 const userRoute = require('./routes/user.route');
 const fortvestRoute = require('./routes/fortvest.route');
+const transactionRoutes = require('./routes/transaction.route');
+const cardRoutes = require('./routes/card.route');
 const logger = require('./utils/logger');
 const correlationIDMidware = require('./middleware/correlation-id-middleware');
 const apiAccessAuthMiddleware = require('./middleware/api-access-auth');
@@ -38,6 +40,8 @@ app.get('/healthcheck', async (req, res) => {
 
 app.use('/v1/user', userRoute);
 app.use('/v1/fortvest', fortvestRoute);
+app.use('/v1/transaction', transactionRoutes);
+app.use('/v1/card', cardRoutes);
 
 app.listen(config.PORT, () => {
   console.log(`Server is up and running on port number ${config.PORT}`);
