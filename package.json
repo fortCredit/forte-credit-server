@@ -4,7 +4,7 @@
   "description": "a financial-technology loan application",
   "main": ".eslintrc.js",
   "dependencies": {
-    "aws-sdk": "^2.977.0",
+    "aws-sdk": "^2.1026.0",
     "axios": "^0.21.4",
     "bcryptjs": "^2.4.3",
     "body-parser": "^1.19.0",
@@ -14,7 +14,7 @@
     "got": "^11.8.2",
     "jsonwebtoken": "^8.5.1",
     "log4js": "^6.3.0",
-    "mongoose": "^5.13.7",
+    "mongoose": "^5.13.13",
     "node-cron": "^3.0.0"
   },
   "devDependencies": {
