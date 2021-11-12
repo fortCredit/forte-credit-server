@@ -245,3 +245,30 @@ exports.addBankDetails = async (userid, bankDetails, correlationID) => {
     throw new Error(err.message);
   }
 };
+
+// change password
+exports.changePassword = async function (userid, passObj, correlationID) {
+  // hash new password
+  const { newPassword, curPassword } = passObj;
+  const getUser = await User.findOne({ _id: userid });
+  const isMatch = await bcrypt.compare(curPassword, getUser.password);
+  if (!isMatch) throw new Error('Incorrect Current Password');
+  logger.trace(`${correlationID}: >>>> Call to bcrypt.hash() to hash new password`);
+  const hashNewPassword = await bcrypt.hash(newPassword, 12);
+  logger.trace(`${correlationID}: Update User data with new password`);
+  await User.findOneAndUpdate(
+    {
+      _id: userid,
+    },
+    {
+      password: hashNewPassword,
+      firstPwd: false,
+    },
+  );
+  logger.trace(`${correlationID}: >>> Exiting changePassword()`);
+  const response = {};
+  response.data = [];
+  response.message = 'Password Changed Successful';
+  response.success = true;
+  return response;
+};

@@ -300,3 +300,42 @@ exports.updateAccountDetails = async function (req, res) {
     return res.json(response.error(error, message));
   }
 };
+
+exports.changePassword = async function (req, res) {
+  const correlationID = req.header('x-correlation-id');
+  if (req.body) {
+    const userid = req.user._id;
+    try {
+      logger.trace(`${correlationID}: <<<<<<--Started Actual reset password flow-->>>>>>`);
+      const { newPassword, curPassword } = req.body;
+      logger.trace(`${correlationID}: Validate required fields`);
+      await requiredFieldValidator(
+        ['newPassword', 'curPassword'],
+        Object.keys(req.body),
+        req.body,
+        correlationID,
+      );
+      logger.trace(`${correlationID}: Validation successful`);
+      logger.trace(`${correlationID}: >>>> Call to userManagementService.resetPassword()`);
+      const resetPassword = await
+      userManagementService.changePassword(userid, { curPassword, newPassword }, correlationID);
+      logger.trace(`${correlationID}: Password Reset Successful`);
+      return res.json(response.success(resetPassword.data, resetPassword.message));
+    } catch (err) {
+      logger.trace(`${correlationID}: ${err}`);
+      const error = {};
+      let message = '';
+      err.data ? error.data = err.data : error.data = {};
+      err.name ? error.name = err.name : error.name = 'UnknownError';
+      err.message ? message = err.message : message = 'Something Failed';
+      return res.json(response.error(error, message));
+    }
+  } else {
+    const error = {
+      title: 'Bad Request',
+      detail: 'Kindly check the documentation for this API',
+    };
+    const message = 'Failed, Bad Request';
+    return res.json(response.error([], error, message));
+  }
+};
