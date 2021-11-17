@@ -16,7 +16,6 @@ exports.verifyBVN = async (reqBody, correlationID) => {
       'content-type': 'application/json',
       'cache-control': 'no-cache',
     };
-    // console.log(headers, reqBody)
     logger.trace(
       `${correlationID}: >>>> call to  paystack api `,
     );

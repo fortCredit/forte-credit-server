@@ -15,6 +15,8 @@ router.post('/password/reset', userController.resetPassword);
 router.post('/profile/update', auth, userController.updateProfile);
 router.post('/update/bankdetails', auth, userController.updateAccountDetails);
 router.post('/getuser', auth, userController.getUser);
+router.post('/password/change', auth, userController.changePassword);
+
 // router.post('/all', userController.getAllUsers);
 
 module.exports = router;
