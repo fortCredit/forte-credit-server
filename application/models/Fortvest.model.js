@@ -17,6 +17,7 @@ const FVSchema = mongoose.Schema({
     ref: 'user',
     required: true,
   },
+  planAlias: String,
   card: {
     type: Schema.Types.ObjectId,
     ref: 'card',

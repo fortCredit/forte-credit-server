@@ -34,6 +34,7 @@ const addFortvestPlan = async (req, res) => {
       isAutomated,
       frequency,
       amount,
+      planAlias,
       investmentLength,
       card,
       startDate,
@@ -45,6 +46,7 @@ const addFortvestPlan = async (req, res) => {
     planObj.frequency = frequency;
     planObj.amount = amount;
     planObj.investmentLength = investmentLength;
+    planObj.planAlias = planAlias;
     planObj.nextInvestmentDate = new Date(startDate);
     planObj.user = user;
     planObj.card = card;

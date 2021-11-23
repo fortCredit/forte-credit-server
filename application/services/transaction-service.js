@@ -16,7 +16,6 @@ exports.verifyBVN = async (reqBody, correlationID) => {
       'content-type': 'application/json',
       'cache-control': 'no-cache',
     };
-    // console.log(headers, reqBody)
     logger.trace(
       `${correlationID}: >>>> call to  paystack api `,
     );
@@ -150,7 +149,6 @@ exports.paystackInit = async (reqBody, correlationID) => {
       transactionObj.user = reqBody.user;
       const newTransaction = new Transaction(transactionObj);
       await newTransaction.save();
-      console.log(newTransaction);
     } else {
       throw new Error('An error occured when initializing transaction');
     }

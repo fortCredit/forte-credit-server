@@ -304,23 +304,20 @@ exports.updateAccountDetails = async function (req, res) {
 exports.changePassword = async function (req, res) {
   const correlationID = req.header('x-correlation-id');
   if (req.body) {
-    const userid = req.user._id;
     try {
       logger.trace(`${correlationID}: <<<<<<--Started Actual reset password flow-->>>>>>`);
-      const { newPassword, curPassword } = req.body;
-      logger.trace(`${correlationID}: Validate required fields`);
+      const { newPassword } = req.body;
       await requiredFieldValidator(
-        ['newPassword', 'curPassword'],
+        ['newPassword'],
         Object.keys(req.body),
-        req.body,
         correlationID,
       );
       logger.trace(`${correlationID}: Validation successful`);
-      logger.trace(`${correlationID}: >>>> Call to userManagementService.resetPassword()`);
-      const resetPassword = await
-      userManagementService.changePassword(userid, { curPassword, newPassword }, correlationID);
+      logger.trace(`${correlationID}: >>>> Call to userManagementService.changepwd()`);
+      const changePwd = await
+      userManagementService.changePwd(req.user._id, newPassword, correlationID);
       logger.trace(`${correlationID}: Password Reset Successful`);
-      return res.json(response.success(resetPassword.data, resetPassword.message));
+      return res.json(response.success(changePwd.data, changePwd.message));
     } catch (err) {
       logger.trace(`${correlationID}: ${err}`);
       const error = {};

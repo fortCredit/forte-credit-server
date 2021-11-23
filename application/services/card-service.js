@@ -73,10 +73,10 @@ const makeCardDefault = async (user, cardid, correlationID) => {
   return response;
 };
 
-const removeCard = async (user, cardid, correlationID) => {
+const removeCard = async (cardid, correlationID) => {
   logger.trace(`${correlationID}: <<<< Entering fortVestService.${getFuncName()}`);
 
-  await Card.findOneAndUpdate(({ _id: cardid }, { deleted: true }));
+  await Card.findOneAndUpdate({ _id: cardid }, { deleted: true });
   logger.trace(`${correlationID}: <<<< Exiting fortVestService.${getFuncName()}`);
   const response = {};
   response.data = {};

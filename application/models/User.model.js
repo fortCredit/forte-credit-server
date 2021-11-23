@@ -42,6 +42,8 @@ const UserSchema = mongoose.Schema({
   token: {
     type: String,
   },
+  nextPwdDue: Date,
+  pwdDue: Boolean,
   gender: {
     type: String,
     enum: ['MALE', 'FEMALE'],
