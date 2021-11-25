@@ -1,13 +1,13 @@
 const mailgun = require('mailgun-js');
 const logger = require('../utils/logger');
 
-const DOMAIN = 'mail.fortvest.ng';
+const DOMAIN = 'myfortvest.ng';
 const mg = mailgun({ apiKey: process.env.MAIL_GUN_APIKEY, domain: DOMAIN });
 
 exports.sendMail = (mailObj) => {
   const { subject, body } = mailObj.data;
   const data = {
-    from: 'Joe  <mail@hspace.ng>', // sender address
+    from: 'Joe  <mail@forvest.ng>', // sender address
     to: mailObj.recipient,
     subject,
     html: body,
