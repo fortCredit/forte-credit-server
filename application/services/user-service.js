@@ -4,6 +4,7 @@ const bcrypt = require('bcryptjs');
 const ejs = require('ejs');
 const path = require('path');
 const User = require('../models/User.model');
+const Token = require('../models/RegToken.model');
 const ResetPassword = require('../models/PasswordResets.model');
 const logger = require('../utils/logger');
 const authtoken = require('../utils/authtoken');
@@ -21,7 +22,7 @@ const {
 // const capitalizeFirstLetter = (string) => string[0].toUpperCase() + string.slice(1);
 
 // register flow
-exports.register = async (userOBJ, correlationID) => {
+exports.register = async (userOBJ, host, correlationID) => {
   // confirm user does not exist
   const isExist = await User.findOne({ email: userOBJ.email });
   if (isExist) {
@@ -44,6 +45,9 @@ exports.register = async (userOBJ, correlationID) => {
   newUser.nextPwdDue = now.setMonth(now.getMonth() + 3);
   await newUser.save();
   const regUser = await newUser.generateAuthToken();
+  const verifyToken = Math.floor(100000 + Math.random() * 900000);
+  const url = `http://${host}/v1/user/verification/${verifyToken}`;
+
   // use mail service to send token to email
   logger.trace(`${correlationID}: Building mail object for mailer service`);
   logger.trace(`${correlationID}: >>>> Call to mailer service`);
@@ -51,7 +55,7 @@ exports.register = async (userOBJ, correlationID) => {
   const emailSubject = 'Hello, From Fortvest'; // email subject
   const emailBody = await ejs.renderFile(
     path.resolve(process.cwd(), 'application/views/register.ejs'),
-    { fullName: userOBJ.fullname },
+    { fullName: userOBJ.fullname, url },
   );
 
   const mailContent = {
@@ -62,10 +66,32 @@ exports.register = async (userOBJ, correlationID) => {
     },
   };
   await mail.sendMail(mailContent);
+  // persist token
+  const saveToken = new Token({
+    userID: regUser._id,
+    token: verifyToken,
+  });
+  await saveToken.save();
   logger.trace(`${correlationID}: <<<< Exiting userManagementService.register()`);
   const response = {};
   response.data = regUser;
   response.message = 'Register successful';
+  response.success = true;
+  return response;
+};
+
+exports.validateAccount = async (token) => {
+  const verificationToken = token;
+  const getToken = await Token.findOne({ token: verificationToken });
+
+  if (!getToken) throw new Error('Token may have expired');
+  // confirm token belongs to a user
+  const getUser = await User.findOne({ _id: getToken.userID });
+  if (!getUser) throw new Error('No account found for this token');
+  await getUser.updateOne({ isVerified: true });
+  const response = {};
+  response.data = getUser;
+  response.message = 'Account Validation successful';
   response.success = true;
   return response;
 };
@@ -76,6 +102,7 @@ exports.login = async function (loginCred, correlationID) {
   if (!user) {
     throw new InvalidCredentialsError(`User with email: ${loginCred.email} does not exist`);
   }
+  if (!user.isValidated) throw new Error('User is not validated yet, kindly check your email.');
   const isMatch = await bcrypt.compare(loginCred.password, user.password);
 
   if (!isMatch) {

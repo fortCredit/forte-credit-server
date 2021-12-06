@@ -44,7 +44,10 @@ exports.register = async (req, res) => {
     userObj.channel = channel;
 
     logger.trace(`${correlationID}: >>>> Call to userManagementService.register()`);
-    const responseData = await userManagementService.register(userObj, correlationID);
+    const responseData = await userManagementService.register(
+      userObj,
+      req.headers.host, correlationID,
+    );
 
     logger.trace(`${correlationID}: User with id ${responseData.data._id} registered successfully.`);
     return res.json(response.success(responseData.data, responseData.message));
@@ -90,6 +93,35 @@ exports.login = async function (req, res) {
   }
 };
 
+exports.validateAccount = async function (req, res) {
+  const correlationID = req.header('x-correlation-id');
+  try {
+    logger.trace(`${correlationID}: <<<<<<-- Started login flow-->>>>>>`);
+    const { token } = req.params;
+
+    logger.trace(`${correlationID}: Validate required fields`);
+    await requiredFieldValidator(
+      ['token'],
+      Object.keys(req.body),
+      req.body,
+      correlationID,
+    );
+    logger.trace(`${correlationID}: Validation successful`);
+
+    logger.trace(`${correlationID}:>>>>  Call to userManagementService.login()`);
+    const loginUser = await userManagementService.validateAccount(token, correlationID);
+    logger.trace(` ${correlationID}: Staff with id ${loginUser.data._id} logged in successfully.`);
+    return res.json(response.success(loginUser.data, loginUser.message));
+  } catch (err) {
+    logger.debug(`${correlationID}: ${err}`);
+    const error = {};
+    let message = '';
+    err.data ? (error.data = err.data) : (error.data = {});
+    err.name ? (error.name = err.name) : (error.name = 'UnknownError');
+    err.message ? (message = err.message) : (message = 'Something Failed');
+    return res.json(response.error(error, message));
+  }
+};
 // //password reset flow
 exports.resetRequest = async function (req, res) {
   const correlationID = req.header('x-correlation-id');
