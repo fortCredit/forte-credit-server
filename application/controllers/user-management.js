@@ -44,9 +44,48 @@ exports.register = async (req, res) => {
     userObj.channel = channel;
 
     logger.trace(`${correlationID}: >>>> Call to userManagementService.register()`);
-    const responseData = await userManagementService.register(userObj, correlationID);
+    const responseData = await userManagementService.register(
+      userObj,
+      correlationID,
+    );
 
     logger.trace(`${correlationID}: User with id ${responseData.data._id} registered successfully.`);
+    return res.json(response.success(responseData.data, responseData.message));
+  } catch (err) {
+    logger.debug(`${correlationID}: ${err}`);
+    const error = {};
+    let message = '';
+    err.data ? (error.data = err.data) : (error.data = {});
+    err.name ? (error.name = err.name) : (error.name = 'UnknownError');
+    err.message ? (message = err.message) : (message = 'Something Failed');
+    return res.json(response.error(error, message));
+  }
+};
+
+exports.requestValidationToken = async (req, res) => {
+  const correlationID = req.header('x-correlation-id');
+  try {
+    logger.trace(`${correlationID}: <<<<<<-- Started register flow -->>>>>>`);
+    const {
+      email,
+    } = req.body;
+
+    logger.trace(`${correlationID}: Run Validation on required fields `);
+    await requiredFieldValidator(
+      ['email'],
+      Object.keys(req.body),
+      req.body,
+      correlationID,
+    );
+
+    logger.trace(`${correlationID}: Validation Successful`);
+
+    logger.trace(`${correlationID}: >>>> Call to userManagementService.register()`);
+    const responseData = await userManagementService.requestValidationToken(
+      email, correlationID,
+    );
+
+    logger.trace(`${correlationID}: ${responseData.message}.`);
     return res.json(response.success(responseData.data, responseData.message));
   } catch (err) {
     logger.debug(`${correlationID}: ${err}`);
@@ -90,6 +129,26 @@ exports.login = async function (req, res) {
   }
 };
 
+exports.validateAccount = async function (req, res) {
+  const correlationID = req.header('x-correlation-id');
+  try {
+    logger.trace(`${correlationID}: <<<<<<-- Started login flow-->>>>>>`);
+    const { token } = req.body;
+
+    logger.trace(`${correlationID}:>>>>  Call to userManagementService.validateAccount()`);
+    const loginUser = await userManagementService.validateAccount(token, correlationID);
+    logger.trace(` ${correlationID}: Staff with id ${loginUser.data._id} logged in successfully.`);
+    return res.json(response.success(loginUser.data, loginUser.message));
+  } catch (err) {
+    logger.debug(`${correlationID}: ${err}`);
+    const error = {};
+    let message = '';
+    err.data ? (error.data = err.data) : (error.data = {});
+    err.name ? (error.name = err.name) : (error.name = 'UnknownError');
+    err.message ? (message = err.message) : (message = 'Something Failed');
+    return res.json(response.error(error, message));
+  }
+};
 // //password reset flow
 exports.resetRequest = async function (req, res) {
   const correlationID = req.header('x-correlation-id');

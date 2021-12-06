@@ -4,6 +4,7 @@ const bcrypt = require('bcryptjs');
 const ejs = require('ejs');
 const path = require('path');
 const User = require('../models/User.model');
+const Token = require('../models/RegToken.model');
 const ResetPassword = require('../models/PasswordResets.model');
 const logger = require('../utils/logger');
 const authtoken = require('../utils/authtoken');
@@ -44,6 +45,8 @@ exports.register = async (userOBJ, correlationID) => {
   newUser.nextPwdDue = now.setMonth(now.getMonth() + 3);
   await newUser.save();
   const regUser = await newUser.generateAuthToken();
+  const verifyToken = Math.floor(100000 + Math.random() * 900000);
+
   // use mail service to send token to email
   logger.trace(`${correlationID}: Building mail object for mailer service`);
   logger.trace(`${correlationID}: >>>> Call to mailer service`);
@@ -51,7 +54,51 @@ exports.register = async (userOBJ, correlationID) => {
   const emailSubject = 'Hello, From Fortvest'; // email subject
   const emailBody = await ejs.renderFile(
     path.resolve(process.cwd(), 'application/views/register.ejs'),
-    { fullName: userOBJ.fullname },
+    { fullName: userOBJ.fullname, token: verifyToken },
+  );
+
+  const mailContent = {
+    recipient,
+    data: {
+      subject: emailSubject,
+      body: emailBody,
+    },
+  };
+  await mail.sendMail(mailContent);
+  // persist token
+  const saveToken = new Token({
+    userID: regUser._id,
+    token: verifyToken,
+  });
+  await saveToken.save();
+  logger.trace(`${correlationID}: <<<< Exiting userManagementService.register()`);
+  const response = {};
+  response.data = regUser;
+  response.message = 'Register successful';
+  response.success = true;
+  return response;
+};
+
+exports.requestValidationToken = async (email, host, correlationID) => {
+  // confirm user does not exist
+  const getUser = await User.findOne({ email });
+  if (getUser.isVerified) throw new Error('This account is already verified');
+  const verifyToken = Math.floor(100000 + Math.random() * 900000);
+  // persist token
+  const saveToken = new Token({
+    userID: getUser._id,
+    token: verifyToken,
+  });
+  await saveToken.save();
+
+  // use mail service to send token to email
+  logger.trace(`${correlationID}: Building mail object for mailer service`);
+  logger.trace(`${correlationID}: >>>> Call to mailer service`);
+  const recipient = getUser.email.trim();
+  const emailSubject = 'Hello, From Fortvest'; // email subject
+  const emailBody = await ejs.renderFile(
+    path.resolve(process.cwd(), 'application/views/verifyacct.ejs'),
+    { fullName: getUser.fullname, token: verifyToken },
   );
 
   const mailContent = {
@@ -64,8 +111,25 @@ exports.register = async (userOBJ, correlationID) => {
   await mail.sendMail(mailContent);
   logger.trace(`${correlationID}: <<<< Exiting userManagementService.register()`);
   const response = {};
-  response.data = regUser;
-  response.message = 'Register successful';
+  response.data = {};
+  response.message = 'Account verification requested';
+  response.success = true;
+  return response;
+};
+
+exports.validateAccount = async (token) => {
+  const verificationToken = token;
+  const getToken = await Token.findOne({ token: verificationToken });
+
+  if (!getToken) throw new Error('Token may have expired');
+  // confirm token belongs to a user
+  const getUser = await User.findOne({ _id: getToken.userID });
+  if (!getUser) throw new Error('No account found for this token');
+  await getUser.updateOne({ isVerified: true });
+  await getToken.deleteOne();
+  const response = {};
+  response.data = getUser;
+  response.message = 'Account Validation successful';
   response.success = true;
   return response;
 };
@@ -76,8 +140,8 @@ exports.login = async function (loginCred, correlationID) {
   if (!user) {
     throw new InvalidCredentialsError(`User with email: ${loginCred.email} does not exist`);
   }
+  if (!user.isVerified) throw new Error('User is not validated yet, kindly check your email.');
   const isMatch = await bcrypt.compare(loginCred.password, user.password);
-
   if (!isMatch) {
     throw new InvalidCredentialsError('Password mismatch');
   }

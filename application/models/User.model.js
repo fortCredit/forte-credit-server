@@ -35,6 +35,10 @@ const UserSchema = mongoose.Schema({
   referral: {
     type: String,
   },
+  isVerified: {
+    type: Boolean,
+    default: false,
+  },
   channel: {
     type: String,
   },
