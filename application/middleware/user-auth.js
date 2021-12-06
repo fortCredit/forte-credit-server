@@ -23,7 +23,7 @@ module.exports = async (req, res, next) => {
     if (!user) {
       throw new Error();
     }
-    if (!user.isVerified) throw new Error('Sorry, your account is not verified yet. Please check your email and follow the verification link');
+    if (!user.isVerified) throw new Error('Sorry, your account is not verified yet. Please check your email and complete account verification');
     req.user = user;
 
     next();
