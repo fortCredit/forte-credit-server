@@ -20,7 +20,6 @@ const addFortvestPlan = async (investmentObj, correlationID) => {
   } = investmentObj;
   // get user
   const getUser = await User.findOne({ _id: user });
-  console.log(getUser.accountRecord);
   if (!getUser.accountRecord || !getUser.accountRecord.bvn) throw new Error('Sorry, your account record needs to be completed first.');
   const getUserPlan = await Fortvest.findOne({ user, planType, status: 'ACTIVE' });
   if (getUserPlan) throw new Error(`Sorry! You already have an active ${planType.toLowerCase()} plan`);
