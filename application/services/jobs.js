@@ -11,9 +11,9 @@ const { RETRYFREQ } = require('../config');
 const getDuePlans = async () => {
   try {
     const d = new Date();
-    const day = d.setHours(0, 0, 0, 0);
+    const day = d.setUTCHours(0, 0, 0, 0);
     const e = new Date();
-    const night = e.setHours(23, 59, 59, 999);
+    const night = e.setUTCHours(23, 59, 59, 999);
     const duePlans = await Fortvest.find({ nextInvestmentDate: { $gte: (day), $lt: (night) }, status: 'ACTIVE' });
     let paystackStatus = '';
     let paystackReference = '';
