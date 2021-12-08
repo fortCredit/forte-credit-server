@@ -62,12 +62,15 @@ const getAllCards = async (user, correlationID) => {
 
 const makeCardDefault = async (user, cardid, correlationID) => {
   logger.trace(`${correlationID}: <<<< Entering fortVestService.${getFuncName()}`);
-
   await Card.updateMany({ user }, { default: false });
-  await Card.findOneAndUpdate(({ _id: cardid, user }, { default: true }));
+  const setDefault = await Card.findOneAndUpdate(
+    { _id: cardid, user },
+    { default: true },
+    { new: true },
+  );
   logger.trace(`${correlationID}: <<<< Exiting fortVestService.${getFuncName()}`);
   const response = {};
-  response.data = {};
+  response.data = setDefault;
   response.message = 'Card set as default successfully';
   response.success = true;
   return response;
