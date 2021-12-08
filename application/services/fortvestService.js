@@ -83,8 +83,32 @@ const getPlanTranxHistory = async (user, pageOpt, correlationID) => {
   response.success = true;
   return response;
 };
+
+const filterTransactionHistory = async (user, filter, pageOpt, correlationID) => {
+  const transactionCount = await Transaction.countDocuments({ user, description: filter });
+  const { page, size } = pageOpt;
+  const options = {
+    page: page || 1,
+    limit: size || 10,
+    collation: {
+      locale: 'en',
+    },
+    async useCustomCountFn() {
+      return Promise.resolve(transactionCount);
+    },
+  };
+  logger.trace(`${correlationID}: <<<< Entering fortVestService.${getFuncName}`);
+  const getTransactonHistory = await Transaction.paginate({ user, description: filter }, options);
+  logger.trace(`${correlationID}: <<<< Exiting fortVestService.${getFuncName}`);
+  const response = {};
+  response.data = getTransactonHistory;
+  response.message = 'Transaction History retrieved successfully';
+  response.success = true;
+  return response;
+};
 module.exports = {
   addFortvestPlan,
   getFortvestPlan,
   getPlanTranxHistory,
+  filterTransactionHistory,
 };
