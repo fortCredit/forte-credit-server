@@ -31,7 +31,8 @@ const getDuePlans = async () => {
       newTranx.transactionStatus = paystackStatus;
       newTranx.investment = plan._id;
       newTranx.paystackReference = paystackReference;
-      newTranx.description = 'FORTVEST';
+      newTranx.transactionType = 'CREDIT';
+      newTranx.description = plan.planType;
       newTranx.amount = plan.amount;
       await newTranx.save();
       if (paystackStatus === 'FAILED') {
@@ -53,6 +54,7 @@ const getDuePlans = async () => {
         await Fortvest.findOneAndUpdate({ _id: plan._id }, {
           nextInvestmentDate: nextInv,
           toRetry: false,
+          $inc: { totalInvestmentTillDate: plan.amount },
         });
         logger.trace('<<<< Transaction completed successfully');
       }

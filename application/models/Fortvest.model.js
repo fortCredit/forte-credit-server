@@ -39,7 +39,8 @@ const FVSchema = mongoose.Schema({
     type: Number,
     min: 50000,
   },
-  totalInvestment: {
+  interestRate: Number,
+  totalInvestmentTillDate: {
     type: Number,
   },
   investmentLength: {

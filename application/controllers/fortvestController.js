@@ -88,15 +88,9 @@ const getPlanTranxHistory = async (req, res) => {
   const correlationID = req.header('x-correlation-id');
   const user = req.user._id;
   try {
-    await requiredFieldValidator(
-      ['investment'],
-      Object.keys(req.body),
-      req.body,
-      correlationID,
-    );
-    const { investment } = req.body;
-
-    const responseData = await fortVestService.getPlanTranxHistory(user, investment, correlationID);
+    const { page, size } = req.params;
+    const responseData = await fortVestService
+      .getPlanTranxHistory(user, { page, size }, correlationID);
 
     logger.trace(`${correlationID}: ${responseData.message}`);
     return res.json(response.success(responseData.data, responseData.message));

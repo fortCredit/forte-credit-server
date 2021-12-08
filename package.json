@@ -17,6 +17,7 @@
     "log4js": "^6.3.0",
     "mailgun-js": "^0.22.0",
     "mongoose": "^5.13.13",
+    "mongoose-paginate-v2": "^1.4.2",
     "node-cron": "^3.0.0"
   },
   "devDependencies": {

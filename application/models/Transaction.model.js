@@ -2,10 +2,11 @@
 /* eslint-disable no-console */
 /* eslint-disable no-underscore-dangle */
 const mongoose = require('mongoose');
+const mongoosePaginate = require('mongoose-paginate-v2');
 
 const { Schema } = mongoose;
 const autoIncrementModelID = require('./Counter.model');
-const { TRANSACTIONSTATUS, TRANSACTIONDESC } = require('../config/app');
+const { TRANSACTIONSTATUS, TRANSACTIONDESC, TRANSACTIONTYPE } = require('../config/app');
 
 const TransactionSchema = mongoose.Schema({
   transactionID: {
@@ -26,6 +27,7 @@ const TransactionSchema = mongoose.Schema({
   },
   transactionType: {
     type: String,
+    enum: TRANSACTIONTYPE,
   },
   transactionStatus: {
     type: String,
@@ -59,8 +61,11 @@ TransactionSchema.pre('save', function (next) {
   autoIncrementModelID('applicationCount', 'transactionID', this, next, 'FRTVST');
 });
 
+TransactionSchema.plugin(mongoosePaginate);
+
 TransactionSchema.pre('find', function () {
   this.where({ deleted: false });
+  this.populate('investment');
   this.sort({ createdAt: -1 });
 });
 
