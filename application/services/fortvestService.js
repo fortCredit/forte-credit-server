@@ -51,9 +51,9 @@ const addFortvestPlan = async (investmentObj, correlationID) => {
 };
 
 const getFortvestPlan = async (user, correlationID) => {
-  logger.trace(`${correlationID}: <<<< Entering fortVestService.${getFuncName}`);
+  logger.trace(`${correlationID}: <<<< Entering fortVestService.${getFuncName()}`);
   const getUserPlan = await Fortvest.find({ user });
-  logger.trace(`${correlationID}: <<<< Exiting fortVestService.${getFuncName}`);
+  logger.trace(`${correlationID}: <<<< Exiting fortVestService.${getFuncName()}`);
   const response = {};
   response.data = getUserPlan;
   response.message = 'User Plan retrieved successfully';
@@ -61,8 +61,10 @@ const getFortvestPlan = async (user, correlationID) => {
   return response;
 };
 
-const getPlanTranxHistory = async (user, pageOpt, correlationID) => {
-  const transactionCount = await Transaction.countDocuments({ user });
+const getPlanTranxHistory = async (user, type, pageOpt, correlationID) => {
+  const tranxType = type === 'INVESTMENT' ? 'CREDIT' : 'DEBIT';
+  console.log(tranxType);
+  const transactionCount = await Transaction.countDocuments({ user, transactionType: tranxType });
   const { page, size } = pageOpt;
   const options = {
     page: page || 1,
@@ -74,9 +76,13 @@ const getPlanTranxHistory = async (user, pageOpt, correlationID) => {
       return Promise.resolve(transactionCount);
     },
   };
-  logger.trace(`${correlationID}: <<<< Entering fortVestService.${getFuncName}`);
-  const getTransactonHistory = await Transaction.paginate({ user }, options);
-  logger.trace(`${correlationID}: <<<< Exiting fortVestService.${getFuncName}`);
+  logger.trace(`${correlationID}: <<<< Entering fortVestService.${getFuncName()}`);
+  const getTransactonHistory = await Transaction.paginate(
+    {
+      user, transactionType: tranxType,
+    }, options,
+  );
+  logger.trace(`${correlationID}: <<<< Exiting fortVestService.${getFuncName()}`);
   const response = {};
   response.data = getTransactonHistory;
   response.message = 'Transaction History retrieved successfully';
@@ -97,9 +103,9 @@ const filterTransactionHistory = async (user, filter, pageOpt, correlationID) =>
       return Promise.resolve(transactionCount);
     },
   };
-  logger.trace(`${correlationID}: <<<< Entering fortVestService.${getFuncName}`);
+  logger.trace(`${correlationID}: <<<< Entering fortVestService.${getFuncName()}`);
   const getTransactonHistory = await Transaction.paginate({ user, description: filter }, options);
-  logger.trace(`${correlationID}: <<<< Exiting fortVestService.${getFuncName}`);
+  logger.trace(`${correlationID}: <<<< Exiting fortVestService.${getFuncName()}`);
   const response = {};
   response.data = getTransactonHistory;
   response.message = 'Transaction History retrieved successfully';

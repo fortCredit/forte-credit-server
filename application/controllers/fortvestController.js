@@ -88,9 +88,9 @@ const getPlanTranxHistory = async (req, res) => {
   const correlationID = req.header('x-correlation-id');
   const user = req.user._id;
   try {
-    const { page, size } = req.params;
+    const { page, size, type } = req.params;
     const responseData = await fortVestService
-      .getPlanTranxHistory(user, { page, size }, correlationID);
+      .getPlanTranxHistory(user, type.toUpperCase(), { page, size }, correlationID);
 
     logger.trace(`${correlationID}: ${responseData.message}`);
     return res.json(response.success(responseData.data, responseData.message));
