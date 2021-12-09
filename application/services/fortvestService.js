@@ -63,7 +63,6 @@ const getFortvestPlan = async (user, correlationID) => {
 
 const getPlanTranxHistory = async (user, type, pageOpt, correlationID) => {
   const tranxType = type === 'INVESTMENT' ? 'CREDIT' : 'DEBIT';
-  console.log(tranxType);
   const transactionCount = await Transaction.countDocuments({ user, transactionType: tranxType });
   const { page, size } = pageOpt;
   const options = {
