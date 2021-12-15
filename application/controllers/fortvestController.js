@@ -134,7 +134,7 @@ const withdrawal = async (req, res) => {
 
     logger.trace(`${correlationID}: Run Validation on required fields `);
     await requiredFieldValidator(
-      ['amount', 'account_number', 'planType', 'bankname'],
+      ['amount'],
       Object.keys(req.body),
       req.body,
       correlationID,
@@ -142,14 +142,14 @@ const withdrawal = async (req, res) => {
     const {
       planType,
       amount,
-      bankname,
+      bankName,
       accountNumber,
     } = req.body;
     logger.trace(`${correlationID}: Validation Successful`);
     const withdrawObj = {};
     withdrawObj.planType = planType.toUpperCase();
     withdrawObj.amount = amount;
-    withdrawObj.bankname = bankname;
+    withdrawObj.bankName = bankName;
     withdrawObj.accountNumber = accountNumber;
     withdrawObj.user = user;
     const responseData = await fortVestService.withdrawal(withdrawObj, correlationID);

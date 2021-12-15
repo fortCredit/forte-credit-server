@@ -118,14 +118,21 @@ const withdrawal = async (withdrawObj, correlationID) => {
 
   // Check if user does not have an existing Plan
   const {
-    user, amount,
+    user, amount, planType, bankName, accountNumber,
   } = withdrawObj;
   // get user
-  const getUser = await User.findOne({ _id: user });
-  if (!getUser.accountRecord) throw new Error('Sorry, your account record needs to be completed first.');
+  const getUser = await User.findOne(
+    {
+      _id: user,
+      'accountRecord.bankName': bankName,
+      'accountRecord.accountNumber': accountNumber,
+    },
+  );
+  if (!getUser) throw new Error('Sorry, your account record needs to be completed first.');
 
   // get user plan type
-  const getUserPlan = await Fortvest.findOne({ user });
+  const getUserPlan = await Fortvest.findOne({ user, planType });
+  if (!getUserPlan) throw new Error('Sorry, wrong plan. Kindly contact support');
 
   // get user total investment
   const getTotalInvestment = await Fortvest.find({ user });
@@ -136,16 +143,13 @@ const withdrawal = async (withdrawObj, correlationID) => {
 
   // Create new instance of withdrawal
   const withdraw = new Withdraw(withdrawObj);
-  withdraw.planType = getUserPlan.planType;
-  withdraw.bankName = getUser.bankName;
-  withdraw.accountNumber = getUser.accountNumber;
   withdraw.balance = newBalance;
   await withdraw.save();
 
   logger.trace(`${correlationID}: <<<< Exiting fortVestService.${getFuncName()}`);
   const response = {};
   response.data = withdraw;
-  response.message = 'Success, your withdrawal will be forwarded shortly';
+  response.message = 'Completed, your withdrawal application has been completed';
   response.success = true;
   return response;
 };

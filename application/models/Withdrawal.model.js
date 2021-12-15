@@ -28,7 +28,7 @@ const WithdrawalSchema = mongoose.Schema({
     type: String,
     required: true,
   },
-  bankname: String,
+  bankName: String,
   balance: Number,
   status: {
     type: String,
