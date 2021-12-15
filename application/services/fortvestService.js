@@ -3,6 +3,7 @@
 const Fortvest = require('../models/Fortvest.model');
 const User = require('../models/User.model');
 const Transaction = require('../models/Transaction.model');
+const Withdraw = require('../models/Withdrawal.model');
 // const mailScheduler = require('../utils/mailer');
 const logger = require('../utils/logger');
 
@@ -111,9 +112,48 @@ const filterTransactionHistory = async (user, filter, pageOpt, correlationID) =>
   response.success = true;
   return response;
 };
+
+const withdrawal = async (withdrawObj, correlationID) => {
+  logger.trace(`${correlationID}: <<<< Entering fortVestService.${getFuncName()}`);
+
+  // Check if user does not have an existing Plan
+  const {
+    user, amount,
+  } = withdrawObj;
+  // get user
+  const getUser = await User.findOne({ _id: user });
+  if (!getUser.accountRecord) throw new Error('Sorry, your account record needs to be completed first.');
+
+  // get user plan type
+  const getUserPlan = await Fortvest.findOne({ user });
+
+  // get user total investment
+  const getTotalInvestment = await Fortvest.find({ user });
+  if (amount > getTotalInvestment.totalInvestmentTillDate) throw new Error('Sorry you don\'t have enough money in your investment plan');
+
+  // New Balance after withdrawal
+  const newBalance = getTotalInvestment.totalInvestmentTillDate - amount;
+
+  // Create new instance of withdrawal
+  const withdraw = new Withdraw(withdrawObj);
+  withdraw.planType = getUserPlan.planType;
+  withdraw.bankName = getUser.bankName;
+  withdraw.accountNumber = getUser.accountNumber;
+  withdraw.balance = newBalance;
+  await withdraw.save();
+
+  logger.trace(`${correlationID}: <<<< Exiting fortVestService.${getFuncName()}`);
+  const response = {};
+  response.data = withdraw;
+  response.message = 'Success, your withdrawal will be forwarded shortly';
+  response.success = true;
+  return response;
+};
+
 module.exports = {
   addFortvestPlan,
   getFortvestPlan,
   getPlanTranxHistory,
   filterTransactionHistory,
+  withdrawal,
 };

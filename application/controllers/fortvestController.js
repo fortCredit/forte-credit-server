@@ -125,9 +125,51 @@ const filterTranxHistory = async (req, res) => {
     return res.json(response.error(error, message));
   }
 };
+
+const withdrawal = async (req, res) => {
+  const correlationID = req.header('x-correlation-id');
+  const user = req.user._id;
+  try {
+    logger.trace(`${correlationID}: <<<<<<-- Started ${getFuncName()} flow -->>>>>>`);
+
+    logger.trace(`${correlationID}: Run Validation on required fields `);
+    await requiredFieldValidator(
+      ['amount', 'account_number', 'planType', 'bankname'],
+      Object.keys(req.body),
+      req.body,
+      correlationID,
+    );
+    const {
+      planType,
+      amount,
+      bankname,
+      accountNumber,
+    } = req.body;
+    logger.trace(`${correlationID}: Validation Successful`);
+    const withdrawObj = {};
+    withdrawObj.planType = planType.toUpperCase();
+    withdrawObj.amount = amount;
+    withdrawObj.bankname = bankname;
+    withdrawObj.accountNumber = accountNumber;
+    withdrawObj.user = user;
+    const responseData = await fortVestService.withdrawal(withdrawObj, correlationID);
+
+    logger.trace(`${correlationID}: ${responseData}`);
+    return res.json(response.success(responseData.data, responseData.message));
+  } catch (err) {
+    logger.debug(`${correlationID}: ${err}`);
+    const error = {};
+    let message = '';
+    err.data ? (error.data = err.data) : (error.data = {});
+    err.name ? (error.name = err.name) : (error.name = 'UnknownError');
+    err.message ? (message = err.message) : (message = 'Something Failed');
+    return res.json(response.error(error, message));
+  }
+};
 module.exports = {
   addFortvestPlan,
   getFortvestPlan,
   getPlanTranxHistory,
   filterTranxHistory,
+  withdrawal,
 };
