@@ -38,6 +38,8 @@ const TransactionSchema = mongoose.Schema({
     type: Schema.Types.ObjectId,
     ref: 'fortvest',
   },
+  failedDueTo: String,
+  toRetry: Date,
   paystackReference: {
     type: String,
   },
