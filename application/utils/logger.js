@@ -19,7 +19,7 @@ class Logger {
     //     accessKeyId: config.AWSSERCRETACCESSKEY,
     //     secretAccessKey: config.AWSSERCRETKEYID,
     //     region: 'ap-southeast-1',
-    //     logGroup: 'fortvest-mgt-log',
+    //     logGroup: 'usr-mgt-log',
     //     logStream: this.serviceName,
     //     lawgsConfig: {
     //       showDebugLogs: true,
