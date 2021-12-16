@@ -93,7 +93,7 @@ const handleFailure = async () => {
 
 exports.job = async () => {
   // this runs every 5 HRS '0 */5 * * *'
-  schedule.schedule('*/10 * * * * *', async () => {
+  schedule.schedule('0 */5 * * *', async () => {
     getDuePlans();
   });
   // this runs every 12am '0 0 * * *'
