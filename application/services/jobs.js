@@ -81,7 +81,8 @@ const handleFailure = async () => {
   try {
     // pick investments meant to have been run since yesterday
     const d = new Date();
-    const yesterday = d.setDate(d.getDate() - 1);
+    let yesterday = d.setDate(d.getDate() - 1);
+    yesterday = d.setUTCHours(0, 0, 0, 0);
     const e = new Date();
     const day = e.setUTCHours(0, 0, 0, 0);
     const failedPlans = await Fortvest.find({ nextInvestmentDate: { $gte: (yesterday), $lt: (day) }, status: 'ACTIVE' });
@@ -93,11 +94,11 @@ const handleFailure = async () => {
 
 exports.job = async () => {
   // this runs every 5 HRS '0 */5 * * *'
-  schedule.schedule('0 */5 * * *', async () => {
+  schedule.schedule('0 */1 * * *', async () => {
     getDuePlans();
   });
-  // this runs every 12am '0 0 * * *'
-  schedule.schedule('* * * * *', async () => {
+  // this runs every 3am '0 3 * * *'
+  schedule.schedule('0 3 * * *', async () => {
     deactivatePlans();
     handleFailure();
   });
