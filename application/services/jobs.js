@@ -93,13 +93,17 @@ const handleFailure = async () => {
 };
 
 exports.job = async () => {
-  // this runs every 5 HRS '0 */5 * * *'
+  // this runs every 1 HR '0 */1 * * *'
   schedule.schedule('0 */1 * * *', async () => {
     getDuePlans();
   });
+  // this runs every 12am '0 0 * * *'
+  schedule.schedule('0 0 * * *', async () => {
+    deactivatePlans();
+  });
+
   // this runs every 3am '0 3 * * *'
   schedule.schedule('0 3 * * *', async () => {
-    deactivatePlans();
     handleFailure();
   });
 };
