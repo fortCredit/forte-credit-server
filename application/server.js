@@ -48,6 +48,6 @@ app.listen(config.PORT, () => {
 
   // Connect Database
   connectDB(() => {
-    job();
+    if (process.env.SERVER === 'LOCAL' || process.env.SERVER === 'AWS') job();
   });
 });
