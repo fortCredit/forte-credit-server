@@ -71,7 +71,12 @@ const getDuePlans = async () => {
 const deactivatePlans = async () => {
   try {
     const d = new Date();
-    await Fortvest.updateMany({ investMentEndDate: { $lt: (d) }, status: 'ACTIVE', toRetry: false }, { status: 'INACTIVE' });
+    const getClosedPlans = await Fortvest.find({ investMentEndDate: { $lt: (d) }, status: 'ACTIVE', toRetry: false });
+    getClosedPlans.forEach(async (plan) => {
+      const balanceWithROI = plan.totalInvestmentTillDate
+      + (plan.totalInvestmentTillDate * plan.interestRate);
+      await Fortvest.updateOne({ _id: plan._id }, { status: 'INACTIVE', balanceWithROI, withdrawalBalance: balanceWithROI });
+    });
   } catch (err) {
     logger.error(`<<<< Job failed due tols ${err}`);
   }
