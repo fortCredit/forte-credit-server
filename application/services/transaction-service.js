@@ -242,3 +242,110 @@ exports.chargeAuthorize = async (card, amount, correlationID) => {
     throw new Error(err.message);
   }
 };
+
+exports.verifyAccountNumber = async (accountObj, correlationID) => {
+  try {
+    logger.trace(
+      `${correlationID}: >>>> Entering transactionCordService.verifyAccountNumber()`,
+    );
+    // set pay stack request options
+    const { accountNumber, bankCode } = accountObj;
+    const url = `https://api.paystack.co/bank/resolve?account_number=${accountNumber}&bank_code=${bankCode}`;
+    const headers = {
+      authorization: `Bearer ${process.env.PAYSTACK_SECRET}`,
+      'cache-control': 'no-cache',
+    };
+    logger.trace(
+      `${correlationID}: <<<<< call to  paystack api`,
+    );
+    const paystackVerifyResponse = (await APISERVICE.requestCustom(correlationID, 'PAYSTACK', url, headers, {}, 'get')).data;
+    if (!paystackVerifyResponse) throw new Error('An error occured verifying account number');
+    if (!paystackVerifyResponse.status) throw new Error('Account Number Verification failed');
+    return paystackVerifyResponse.data;
+  } catch (err) {
+    throw new Error(err.message);
+  }
+};
+
+exports.createTransferReceipt = async (receiptObj, correlationID) => {
+  try {
+    logger.trace(
+      `${correlationID}: >>>> Entering transactionCordService.createTransferReceipt()`,
+    );
+    // set pay stack request options
+    const { name, accountNumber, bankCode } = receiptObj;
+    const url = 'https://api.paystack.co/transferrecipient';
+    const headers = {
+      authorization: `Bearer ${process.env.PAYSTACK_SECRET}`,
+      'cache-control': 'no-cache',
+    };
+    logger.trace(
+      `${correlationID}: <<<<< call to  paystack api`,
+    );
+    const body = {
+      name,
+      account_number: accountNumber,
+      bank_code: bankCode,
+      currency: 'NGN',
+    };
+    const paystackVerifyResponse = (await APISERVICE.requestCustom(correlationID, 'PAYSTACK', url, headers, body, 'post')).data;
+    if (!paystackVerifyResponse) throw new Error('An error occured creating transfer receipt');
+    if (!paystackVerifyResponse.status) throw new Error('Transfer receipt creation failed');
+    return paystackVerifyResponse.data;
+  } catch (err) {
+    throw new Error(err.message);
+  }
+};
+
+exports.initiateTransfer = async (receiptObj, correlationID) => {
+  try {
+    logger.trace(
+      `${correlationID}: >>>> Entering transactionCordService.initiateTransfer()`,
+    );
+    // set pay stack request options
+    const { amount, recipient, reason } = receiptObj;
+    const url = 'https://api.paystack.co/transfer';
+    const headers = {
+      authorization: `Bearer ${process.env.PAYSTACK_SECRET}`,
+      'cache-control': 'no-cache',
+    };
+    logger.trace(
+      `${correlationID}: <<<<< call to  paystack api`,
+    );
+    const body = {
+      source: 'balance',
+      amount,
+      recipient,
+      reason,
+    };
+    const initiateTransferResponse = (await APISERVICE.requestCustom(correlationID, 'PAYSTACK', url, headers, body, 'post')).data;
+    if (!initiateTransferResponse) throw new Error('An error occured creating transfer receipt');
+    if (!initiateTransferResponse.status) throw new Error('Transfer receipt creation failed');
+    return initiateTransferResponse.data;
+  } catch (err) {
+    throw new Error(err.message);
+  }
+};
+
+exports.verifyTransfer = async (transfercode, correlationID) => {
+  try {
+    logger.trace(
+      `${correlationID}: >>>> Entering transactionCordService.initiateTransfer()`,
+    );
+    // set pay stack request options
+    const url = `https://api.paystack.co/transfer/${transfercode}`;
+    const headers = {
+      authorization: `Bearer ${process.env.PAYSTACK_SECRET}`,
+      'cache-control': 'no-cache',
+    };
+    logger.trace(
+      `${correlationID}: <<<<< call to  paystack api`,
+    );
+    const verifyResponse = (await APISERVICE.requestCustom(correlationID, 'PAYSTACK', url, headers, {}, 'get')).data;
+    if (!verifyResponse) throw new Error('An error occured creating transfer receipt');
+    if (!verifyResponse.status) throw new Error('Transfer receipt creation failed');
+    return verifyResponse.data;
+  } catch (err) {
+    throw new Error(err.message);
+  }
+};

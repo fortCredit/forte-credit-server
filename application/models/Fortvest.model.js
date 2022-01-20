@@ -2,6 +2,8 @@
 /* eslint-disable no-console */
 /* eslint-disable no-underscore-dangle */
 const mongoose = require('mongoose');
+const mongoosePaginate = require('mongoose-paginate-v2');
+
 const {
   FORTVESTFREQ, FORTVESTPLANS, INVESTMENTSTATUS,
 } = require('../config');
@@ -46,6 +48,8 @@ const FVSchema = mongoose.Schema({
   investmentLength: {
     type: Number, // this is expected in days
   },
+  balanceWithROI: Number, // after investment has ended, this is totalInestment + ROI
+  withdrawalBalance: Number, // withdrawable balance, will reduce with withdrawals
   investMentEndDate: {
     type: Date,
   },
@@ -68,6 +72,8 @@ const FVSchema = mongoose.Schema({
 }, {
   timestamps: true,
 });
+FVSchema.plugin(mongoosePaginate);
+
 FVSchema.pre('save', function (next) {
   if (!this.isNew) {
     next();
