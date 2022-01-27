@@ -6,7 +6,7 @@ const mongoosePaginate = require('mongoose-paginate-v2');
 
 const { Schema } = mongoose;
 const autoIncrementModelID = require('./Counter.model');
-const { TRANSACTIONSTATUS, TRANSACTIONDESC, TRANSACTIONTYPE } = require('../config/app');
+const { TRANSACTIONSTATUS, TRANSACTIONDESC, TRANSACTIONTYPE } = require('../config');
 
 const TransactionSchema = mongoose.Schema({
   transactionID: {
@@ -38,8 +38,22 @@ const TransactionSchema = mongoose.Schema({
     type: Schema.Types.ObjectId,
     ref: 'fortvest',
   },
+  failedDueTo: String,
+  toRetry: Date,
   paystackReference: {
     type: String,
+  },
+  withDrawalReceipt: {
+    id: String,
+    recipient_code: String,
+    paystackType: String,
+    transferCode: String,
+    details: {
+      account_number: String,
+      account_name: String,
+      bank_code: String,
+      bank_name: String,
+    },
   },
   amount: {
     type: Number,

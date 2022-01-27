@@ -6,7 +6,7 @@ const Transaction = require('../models/Transaction.model');
 const Withdraw = require('../models/Withdrawal.model');
 // const mailScheduler = require('../utils/mailer');
 const logger = require('../utils/logger');
-
+const { INTERESTRATES } = require('../config');
 // const capitalizeFirstLetter = (string) => string[0].toUpperCase() + string.slice(1);
 function getFuncName() {
   return getFuncName.caller.name;
@@ -29,14 +29,14 @@ const addFortvestPlan = async (investmentObj, correlationID) => {
   if (planType === 'FIXED-INVEST') {
     if (amount < 50000000) throw new Error('Sorry, the minimum deposit amount for fixed invest is N500,000.00');
     if (investmentLength < 90) throw new Error('Sorry, the minimum duration for fixed invest is 90 days');
-    newPlan.interestRate = 0.10;
+    newPlan.interestRate = INTERESTRATES['FIXED-INVEST'];
   } else if (planType === 'TARGET-INVEST') {
     if (amount < 50000) throw new Error('Sorry, the minimum deposit amount for target invest is N500.00');
-    newPlan.interestRate = 0.05;
+    newPlan.interestRate = INTERESTRATES['TARGET-INVEST'];
   } else if (planType === 'HIGH-YIELD') {
     if (amount < 10000000) throw new Error('Sorry, the minimum deposit amount for high yield is N100,000.00');
     if (investmentLength < 365) throw new Error('Sorry, the minimum duration for high yield is 1 year');
-    newPlan.interestRate = 0.12;
+    newPlan.interestRate = INTERESTRATES['HIGH-YIELD'];
   }
   const startDate = new Date(nextInvestmentDate);
   const investMentEndDate = startDate.setDate(startDate.getDate() + (investmentLength));
@@ -51,9 +51,21 @@ const addFortvestPlan = async (investmentObj, correlationID) => {
   return response;
 };
 
-const getFortvestPlan = async (user, correlationID) => {
+const getFortvestPlan = async (user, pageOpt, correlationID) => {
   logger.trace(`${correlationID}: <<<< Entering fortVestService.${getFuncName()}`);
-  const getUserPlan = await Fortvest.find({ user });
+  const planCount = await Fortvest.countDocuments({ user });
+  const { page, size } = pageOpt;
+  const options = {
+    page: page || 1,
+    limit: size || 10,
+    collation: {
+      locale: 'en',
+    },
+    async useCustomCountFn() {
+      return Promise.resolve(planCount);
+    },
+  };
+  const getUserPlan = await Fortvest.paginate({ user }, options);
   logger.trace(`${correlationID}: <<<< Exiting fortVestService.${getFuncName()}`);
   const response = {};
   response.data = getUserPlan;
