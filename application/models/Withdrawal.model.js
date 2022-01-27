@@ -28,6 +28,7 @@ const WithdrawalSchema = mongoose.Schema({
     type: String,
     required: true,
   },
+  investmentID: String,
   bankName: String,
   balance: Number,
   status: {

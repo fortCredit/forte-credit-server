@@ -118,17 +118,11 @@ const withdrawal = async (withdrawObj, correlationID) => {
 
   // Check if user does not have an existing Plan
   const {
-    user, amount, planType, bankName, accountNumber,
+    user, amount, planType,
   } = withdrawObj;
   // get user
-  const getUser = await User.findOne(
-    {
-      _id: user,
-      'accountRecord.bankName': bankName,
-      'accountRecord.accountNumber': accountNumber,
-    },
-  );
-  if (!getUser) throw new Error('Sorry, your account record needs to be completed first.');
+  const getUser = await User.findOne({ _id: user });
+  if (!getUser.accountRecord) throw new Error('Sorry, your account record needs to be completed first.');
 
   // get user plan type
   const getUserPlan = await Fortvest.findOne({ user, planType });
@@ -136,13 +130,17 @@ const withdrawal = async (withdrawObj, correlationID) => {
 
   // get user total investment
   const getTotalInvestment = await Fortvest.find({ user });
-  if (amount > getTotalInvestment.totalInvestmentTillDate) throw new Error('Sorry you don\'t have enough money in your investment plan');
+  const balance = (getTotalInvestment[0].totalInvestmentTillDate);
+  if (amount > balance) throw new Error('Sorry you don\'t have enough money in your investment plan');
 
   // New Balance after withdrawal
-  const newBalance = getTotalInvestment.totalInvestmentTillDate - amount;
+  const newBalance = balance - amount;
 
   // Create new instance of withdrawal
   const withdraw = new Withdraw(withdrawObj);
+  // withdraw.planType = getUserPlan.planType;
+  withdraw.bankName = getUser.accountRecord.bankName;
+  withdraw.accountNumber = getUser.accountRecord.accountNumber;
   withdraw.balance = newBalance;
   await withdraw.save();
 
