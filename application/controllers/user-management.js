@@ -163,7 +163,7 @@ exports.resetRequest = async function (req, res) {
     );
     logger.trace(`${correlationID}: Validation successful`);
     const requestObj = {};
-    requestObj.email = email.toLowerCase();
+    requestObj.email = email;
     logger.trace('>>>> Call to userManagementService.resetRequest()');
     const passwordResetRequest = await userManagementService
       .resetRequest(requestObj, correlationID);
@@ -291,11 +291,11 @@ exports.updateProfile = async function (req, res) {
     try {
       logger.trace(`${correlationID}: <<<<<<--Started update profile flow-->>>>>>`);
       const {
-        profileimage, gender, dateOfBirth, homeAddress,
+        profileImage, gender, dateOfBirth, homeAddress,
       } = req.body;
       // build update object
       const updateObj = {};
-      if (profileimage) updateObj.profileimage = profileimage;
+      if (profileImage) updateObj.profileImage = profileImage;
       if (gender) updateObj.gender = gender;
       if (dateOfBirth) updateObj.dateOfBirth = dateOfBirth;
       if (homeAddress) updateObj.homeAddress = homeAddress;
