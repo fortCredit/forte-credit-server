@@ -45,9 +45,9 @@ app.use('/v1/card', cardRoutes);
 
 app.listen(config.PORT, () => {
   console.log(`Server is up and running on port number ${config.PORT}`);
-
+  const server = process.env.SERVER || 'LOCAL';
   // Connect Database
   connectDB(() => {
-    job();
+    if (server === 'LOCAL' || server === 'AWS') job();
   });
 });

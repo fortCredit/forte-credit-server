@@ -16,11 +16,15 @@ exports.verifyBVN = async (reqBody, correlationID) => {
       'content-type': 'application/json',
       'cache-control': 'no-cache',
     };
-    // console.log(headers, reqBody)
-    logger.trace(
-      `${correlationID}: >>>> call to  paystack api `,
+    logger.trace(`${correlationID}: >>>> call to  paystack api `);
+    const paystackBvnResponse = await APISERVICE.requestCustom(
+      correlationID,
+      'PAYSTACK',
+      url,
+      headers,
+      reqBody,
+      'post',
     );
-    const paystackBvnResponse = (await APISERVICE.requestCustom(correlationID, 'PAYSTACK', url, headers, reqBody, 'post'));
     if (!paystackBvnResponse.status) {
       throw new Error('An error occured when initializing transaction');
     }
@@ -75,17 +79,16 @@ exports.completeTransaction = async (transactionID, correlationID) => {
       throw new Error(`Transaction with ID ${transactionID} already completed`);
     }
 
-    getTransaction = await Transaction.findOneAndUpdate({ _id: transactionID },
-      { mobileStatus: 'COMPLETED' }, { new: true });
+    getTransaction = await Transaction.findOneAndUpdate(
+      { _id: transactionID },
+      { mobileStatus: 'COMPLETED' },
+      { new: true },
+    );
     logger.trace(
       `${correlationID}: >>>> Transaction completed created successfully`,
     );
-    logger.trace(
-      `${correlationID}: >>>> Logging transaction`,
-    );
-    logger.trace(
-      `${correlationID}: >>>> Logged transaction`,
-    );
+    logger.trace(`${correlationID}: >>>> Logging transaction`);
+    logger.trace(`${correlationID}: >>>> Logged transaction`);
     const response = {};
     response.data = getTransaction;
     response.message = 'Transaction completed Successfully';
@@ -105,7 +108,10 @@ exports.getTransactionByID = async (queryObj, correlationID) => {
   );
   try {
     const { transactionID, userid } = queryObj;
-    const getTransaction = await Transaction.findOne({ _id: transactionID, user: userid });
+    const getTransaction = await Transaction.findOne({
+      _id: transactionID,
+      user: userid,
+    });
     if (!getTransaction) {
       logger.trace(
         `${correlationID}: >>>> Transaction with ID ${transactionID} not found`,
@@ -135,10 +141,17 @@ exports.paystackInit = async (reqBody, correlationID) => {
       'content-type': 'application/json',
       'cache-control': 'no-cache',
     };
-    logger.trace(
-      `${correlationID}: >>>> call to  paystack api `,
-    );
-    const paystackInitResponse = (await APISERVICE.requestCustom(correlationID, 'PAYSTACK', url, headers, reqBody, 'post')).data;
+    logger.trace(`${correlationID}: >>>> call to  paystack api `);
+    const paystackInitResponse = (
+      await APISERVICE.requestCustom(
+        correlationID,
+        'PAYSTACK',
+        url,
+        headers,
+        reqBody,
+        'post',
+      )
+    ).data;
     if (paystackInitResponse.status) {
       // update transaction status
       const transactionObj = {};
@@ -150,7 +163,6 @@ exports.paystackInit = async (reqBody, correlationID) => {
       transactionObj.user = reqBody.user;
       const newTransaction = new Transaction(transactionObj);
       await newTransaction.save();
-      console.log(newTransaction);
     } else {
       throw new Error('An error occured when initializing transaction');
     }
@@ -164,7 +176,6 @@ exports.paystackInit = async (reqBody, correlationID) => {
 };
 
 // verify transaction with paystack reference
-
 exports.verifyTransaction = async (reqObj, correlationID) => {
   try {
     logger.trace(
@@ -179,12 +190,22 @@ exports.verifyTransaction = async (reqObj, correlationID) => {
       'cache-control': 'no-cache',
     };
     // confirm transaction is not completed already
-    const getTransaction = await Transaction.findOne({ transactionID, transactionStatus: 'COMPLETED' });
+    const getTransaction = await Transaction.findOne({
+      transactionID,
+      transactionStatus: 'COMPLETED',
+    });
     if (getTransaction) throw new Error('Transaction completed already!');
-    logger.trace(
-      `${correlationID}: <<<<< call to  paystack api`,
-    );
-    const paystackVerifyResponse = (await APISERVICE.request(correlationID, 'PAYSTACK', url, headers, {}, 'get')).data;
+    logger.trace(`${correlationID}: <<<<< call to  paystack api`);
+    const paystackVerifyResponse = (
+      await APISERVICE.request(
+        correlationID,
+        'PAYSTACK',
+        url,
+        headers,
+        {},
+        'get',
+      )
+    ).data;
     // check that transaction exists else, create
     const updateObj = { paystackReference: paystackRef, user: userID };
     if (paystackVerifyResponse.data.status === 'success') {
@@ -200,9 +221,7 @@ exports.verifyTransaction = async (reqObj, correlationID) => {
         await newTrax.save();
       }
 
-      logger.trace(
-        `${correlationID}: >>>> Logging transaction`,
-      );
+      logger.trace(`${correlationID}: >>>> Logging transaction`);
       const response = {};
       response.data = paystackVerifyResponse.data;
       response.message = 'Transaction verification completed';
@@ -225,9 +244,7 @@ exports.chargeAuthorize = async (card, amount, correlationID) => {
       authorization: `Bearer ${process.env.PAYSTACK_SECRET}`,
       'cache-control': 'no-cache',
     };
-    logger.trace(
-      `${correlationID}: <<<<< call to  paystack api`,
-    );
+    logger.trace(`${correlationID}: <<<<< call to  paystack api`);
     const getCard = await Card.findOne({ _id: card });
     if (getCard) {
       if (getCard.authorization) {
@@ -235,11 +252,155 @@ exports.chargeAuthorize = async (card, amount, correlationID) => {
         body.authorization_code = getCard.authorization.authorization_code;
         body.email = getCard.authEmail;
         body.amount = amount;
-        const paystackVerifyResponse = (await APISERVICE.requestCustom(correlationID, 'PAYSTACK', url, headers, body, 'post')).data;
+        const paystackVerifyResponse = (
+          await APISERVICE.requestCustom(
+            correlationID,
+            'PAYSTACK',
+            url,
+            headers,
+            body,
+            'post',
+          )
+        ).data;
         return paystackVerifyResponse.data;
       }
     }
     return false;
+  } catch (err) {
+    throw new Error(err.message);
+  }
+};
+
+exports.verifyAccountNumber = async (accountObj, correlationID) => {
+  try {
+    logger.trace(
+      `${correlationID}: >>>> Entering transactionCordService.verifyAccountNumber()`,
+    );
+    // set pay stack request options
+    const { accountNumber, bankCode } = accountObj;
+    const url = `https://api.paystack.co/bank/resolve?account_number=${accountNumber}&bank_code=${bankCode}`;
+    const headers = {
+      authorization: `Bearer ${process.env.PAYSTACK_SECRET}`,
+      'cache-control': 'no-cache',
+    };
+    logger.trace(`${correlationID}: <<<<< call to  paystack api`);
+    const paystackVerifyResponse = (
+      await APISERVICE.requestCustom(
+        correlationID,
+        'PAYSTACK',
+        url,
+        headers,
+        {},
+        'get',
+      )
+    ).data;
+    if (!paystackVerifyResponse) { throw new Error('An error occured verifying account number'); }
+    if (!paystackVerifyResponse.status) { throw new Error('Account Number Verification failed'); }
+    return paystackVerifyResponse.data;
+  } catch (err) {
+    throw new Error(err.message);
+  }
+};
+
+exports.createTransferReceipt = async (receiptObj, correlationID) => {
+  try {
+    logger.trace(
+      `${correlationID}: >>>> Entering transactionCordService.createTransferReceipt()`,
+    );
+    // set pay stack request options
+    const { name, accountNumber, bankCode } = receiptObj;
+    const url = 'https://api.paystack.co/transferrecipient';
+    const headers = {
+      authorization: `Bearer ${process.env.PAYSTACK_SECRET}`,
+      'cache-control': 'no-cache',
+    };
+    logger.trace(`${correlationID}: <<<<< call to  paystack api`);
+    const body = {
+      name,
+      account_number: accountNumber,
+      bank_code: bankCode,
+      currency: 'NGN',
+    };
+    const paystackVerifyResponse = (
+      await APISERVICE.requestCustom(
+        correlationID,
+        'PAYSTACK',
+        url,
+        headers,
+        body,
+        'post',
+      )
+    ).data;
+    if (!paystackVerifyResponse) { throw new Error('An error occured creating transfer receipt'); }
+    if (!paystackVerifyResponse.status) { throw new Error('Transfer receipt creation failed'); }
+    return paystackVerifyResponse.data;
+  } catch (err) {
+    throw new Error(err.message);
+  }
+};
+
+exports.initiateTransfer = async (receiptObj, correlationID) => {
+  try {
+    logger.trace(
+      `${correlationID}: >>>> Entering transactionCordService.initiateTransfer()`,
+    );
+    // set pay stack request options
+    const { amount, recipient, reason } = receiptObj;
+    const url = 'https://api.paystack.co/transfer';
+    const headers = {
+      authorization: `Bearer ${process.env.PAYSTACK_SECRET}`,
+      'cache-control': 'no-cache',
+    };
+    logger.trace(`${correlationID}: <<<<< call to  paystack api`);
+    const body = {
+      source: 'balance',
+      amount,
+      recipient,
+      reason,
+    };
+    const initiateTransferResponse = (
+      await APISERVICE.requestCustom(
+        correlationID,
+        'PAYSTACK',
+        url,
+        headers,
+        body,
+        'post',
+      )
+    ).data;
+    if (!initiateTransferResponse) { throw new Error('An error occured creating transfer receipt'); }
+    if (!initiateTransferResponse.status) { throw new Error('Transfer receipt creation failed'); }
+    return initiateTransferResponse.data;
+  } catch (err) {
+    throw new Error(err.message);
+  }
+};
+
+exports.verifyTransfer = async (transfercode, correlationID) => {
+  try {
+    logger.trace(
+      `${correlationID}: >>>> Entering transactionCordService.initiateTransfer()`,
+    );
+    // set pay stack request options
+    const url = `https://api.paystack.co/transfer/${transfercode}`;
+    const headers = {
+      authorization: `Bearer ${process.env.PAYSTACK_SECRET}`,
+      'cache-control': 'no-cache',
+    };
+    logger.trace(`${correlationID}: <<<<< call to  paystack api`);
+    const verifyResponse = (
+      await APISERVICE.requestCustom(
+        correlationID,
+        'PAYSTACK',
+        url,
+        headers,
+        {},
+        'get',
+      )
+    ).data;
+    if (!verifyResponse) { throw new Error('An error occured creating transfer receipt'); }
+    if (!verifyResponse.status) { throw new Error('Transfer receipt creation failed'); }
+    return verifyResponse.data;
   } catch (err) {
     throw new Error(err.message);
   }

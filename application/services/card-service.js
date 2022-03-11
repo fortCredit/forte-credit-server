@@ -62,21 +62,24 @@ const getAllCards = async (user, correlationID) => {
 
 const makeCardDefault = async (user, cardid, correlationID) => {
   logger.trace(`${correlationID}: <<<< Entering fortVestService.${getFuncName()}`);
-
   await Card.updateMany({ user }, { default: false });
-  await Card.findOneAndUpdate(({ _id: cardid, user }, { default: true }));
+  const setDefault = await Card.findOneAndUpdate(
+    { _id: cardid, user },
+    { default: true },
+    { new: true },
+  );
   logger.trace(`${correlationID}: <<<< Exiting fortVestService.${getFuncName()}`);
   const response = {};
-  response.data = {};
+  response.data = setDefault;
   response.message = 'Card set as default successfully';
   response.success = true;
   return response;
 };
 
-const removeCard = async (user, cardid, correlationID) => {
+const removeCard = async (cardid, correlationID) => {
   logger.trace(`${correlationID}: <<<< Entering fortVestService.${getFuncName()}`);
 
-  await Card.findOneAndUpdate(({ _id: cardid }, { deleted: true }));
+  await Card.findOneAndUpdate({ _id: cardid }, { deleted: true });
   logger.trace(`${correlationID}: <<<< Exiting fortVestService.${getFuncName()}`);
   const response = {};
   response.data = {};
@@ -92,7 +95,7 @@ const getSingle = async (user, cardid, correlationID) => {
   logger.trace(`${correlationID}: <<<< Exiting fortVestService.${getFuncName()}`);
   const response = {};
   response.data = card;
-  response.message = 'Card retrieved successfully';
+  response.message = 'Card Retrieved Successfully';
   response.success = true;
   return response;
 };

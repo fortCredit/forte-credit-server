@@ -1,14 +1,18 @@
 /* eslint-disable no-underscore-dangle */
 /* eslint-disable func-names */
 const bcrypt = require('bcryptjs');
+const ejs = require('ejs');
+const path = require('path');
 const User = require('../models/User.model');
+const Token = require('../models/RegToken.model');
 const ResetPassword = require('../models/PasswordResets.model');
-const mailScheduler = require('../utils/mailer');
 const logger = require('../utils/logger');
 const authtoken = require('../utils/authtoken');
 // const ValidateSms = require('../models/validationToken.model');
 // const { sendsms } = require('../utils/smsservice');
 const payStackService = require('./transaction-service');
+const mail = require('./mail-gun');
+
 const {
   ExpiredTokenError,
   UserAlreadyExistsError,
@@ -37,9 +41,36 @@ exports.register = async (userOBJ, correlationID) => {
   newUser.channel = userOBJ.channel;
   const salt = await bcrypt.genSalt(10);
   newUser.password = await bcrypt.hash(userOBJ.password, salt);
+  const now = new Date();
+  newUser.nextPwdDue = now.setMonth(now.getMonth() + 3);
   await newUser.save();
   const regUser = await newUser.generateAuthToken();
+  const verifyToken = Math.floor(100000 + Math.random() * 900000);
 
+  // use mail service to send token to email
+  logger.trace(`${correlationID}: Building mail object for mailer service`);
+  logger.trace(`${correlationID}: >>>> Call to mailer service`);
+  const recipient = userOBJ.email.trim();
+  const emailSubject = 'Hello, From Fortvest'; // email subject
+  const emailBody = await ejs.renderFile(
+    path.resolve(process.cwd(), 'application/views/register.ejs'),
+    { fullName: userOBJ.fullname, token: verifyToken },
+  );
+
+  const mailContent = {
+    recipient,
+    data: {
+      subject: emailSubject,
+      body: emailBody,
+    },
+  };
+  await mail.sendMail(mailContent);
+  // persist token
+  const saveToken = new Token({
+    userID: regUser._id,
+    token: verifyToken,
+  });
+  await saveToken.save();
   logger.trace(`${correlationID}: <<<< Exiting userManagementService.register()`);
   const response = {};
   response.data = regUser;
@@ -48,14 +79,69 @@ exports.register = async (userOBJ, correlationID) => {
   return response;
 };
 
+exports.requestValidationToken = async (email, host, correlationID) => {
+  // confirm user does not exist
+  const getUser = await User.findOne({ email });
+  if (getUser.isVerified) throw new Error('This account is already verified');
+  const verifyToken = Math.floor(100000 + Math.random() * 900000);
+  // persist token
+  const saveToken = new Token({
+    userID: getUser._id,
+    token: verifyToken,
+  });
+  await saveToken.save();
+
+  // use mail service to send token to email
+  logger.trace(`${correlationID}: Building mail object for mailer service`);
+  logger.trace(`${correlationID}: >>>> Call to mailer service`);
+  const recipient = getUser.email.trim();
+  const emailSubject = 'Hello, From Fortvest'; // email subject
+  const emailBody = await ejs.renderFile(
+    path.resolve(process.cwd(), 'application/views/verifyacct.ejs'),
+    { fullName: getUser.fullname, token: verifyToken },
+  );
+
+  const mailContent = {
+    recipient,
+    data: {
+      subject: emailSubject,
+      body: emailBody,
+    },
+  };
+  await mail.sendMail(mailContent);
+  logger.trace(`${correlationID}: <<<< Exiting userManagementService.register()`);
+  const response = {};
+  response.data = {};
+  response.message = 'Account verification requested';
+  response.success = true;
+  return response;
+};
+
+exports.validateAccount = async (token) => {
+  const verificationToken = token;
+  const getToken = await Token.findOne({ token: verificationToken });
+
+  if (!getToken) throw new Error('Token may have expired');
+  // confirm token belongs to a user
+  const getUser = await User.findOne({ _id: getToken.userID });
+  if (!getUser) throw new Error('No account found for this token');
+  await getUser.updateOne({ isVerified: true });
+  await getToken.deleteOne();
+  const response = {};
+  response.data = getUser;
+  response.message = 'Account Validation successful';
+  response.success = true;
+  return response;
+};
+
 exports.login = async function (loginCred, correlationID) {
   logger.trace(`${correlationID}: Querying db for user with ${loginCred.email}`);
   const user = await User.findOne({ email: loginCred.email });
   if (!user) {
-    throw new InvalidCredentialsError(`Staff with email: ${loginCred.email} does not exist`);
+    throw new InvalidCredentialsError(`User with email: ${loginCred.email} does not exist`);
   }
+  if (!user.isVerified) throw new Error('User is not validated yet, kindly check your email.');
   const isMatch = await bcrypt.compare(loginCred.password, user.password);
-
   if (!isMatch) {
     throw new InvalidCredentialsError('Password mismatch');
   }
@@ -75,7 +161,7 @@ exports.resetRequest = async function (resetObj, correlationID) {
   logger.trace(`${correlationID}: Querying db for user with ${resetObj.email}`);
   const user = await User.findOne(resetObj);
   if (!user) {
-    throw new InvalidCredentialsError(`${correlationID}: Staff with email: ${resetObj.email} does not exist`);
+    throw new InvalidCredentialsError(`${correlationID}: User with email: ${resetObj.email} does not exist`);
   }
   const genToken = Math.floor(100000 + Math.random() * 900000);
   // check if there is a reset request from this user already
@@ -96,16 +182,22 @@ exports.resetRequest = async function (resetObj, correlationID) {
   );
   // use mail service to send token to email
   logger.trace(`${correlationID}: Building mail object for mailer service`);
-  const templateType = 'RESETPASSWORD';
   logger.trace(`${correlationID}: >>>> Call to mailer service`);
-  mailScheduler.sendMail(
-    {
-      templateType,
-      token: genToken,
-      email: resetObj.email,
-      fullName: user.fullName ? user.fullName.split(' ')[0] : '',
-    },
+  const recipient = user.email.trim();
+  const emailSubject = 'Hello, From Fortvest'; // email subject
+  const emailBody = await ejs.renderFile(
+    path.resolve(process.cwd(), 'application/views/password-reset.ejs'),
+    { fullName: user.fullname, token: genToken },
   );
+
+  const mailContent = {
+    recipient,
+    data: {
+      subject: emailSubject,
+      body: emailBody,
+    },
+  };
+  await mail.sendMail(mailContent);
 
   const response = {};
   response.data = [];
@@ -145,11 +237,13 @@ exports.resetPassword = async function (resetPasswordToken, newPassword, correla
   logger.trace(`${correlationID}: >>>> Call to bcrypt.hash() to hash new password`);
   const hashNewPassword = await bcrypt.hash(newPassword, 12);
   logger.trace(`${correlationID}: Update User data with new password`);
+  const now = new Date();
   await User.findOneAndUpdate(
     {
       _id: requestData.userid,
     },
     {
+      nextPwdDue: now.setMonth(now.getMonth() + 3),
       password: hashNewPassword,
     },
   );
@@ -244,4 +338,40 @@ exports.addBankDetails = async (userid, bankDetails, correlationID) => {
   } catch (err) {
     throw new Error(err.message);
   }
+};
+
+exports.changePwd = async (userid, newPassword, correlationID) => {
+  const hashNewPassword = await bcrypt.hash(newPassword, 12);
+  logger.trace(`${correlationID}: Update User data with new password`);
+  const now = new Date();
+  await User.findOneAndUpdate(
+    {
+      _id: userid,
+    },
+    {
+      nextPwdDue: now.setMonth(now.getMonth() + 3),
+      password: hashNewPassword,
+    },
+  );
+  logger.trace(`${correlationID}: <<<< Exiting userManagementService.getAlUsers()`);
+  const response = {};
+  response.data = {};
+  response.message = 'Password changed successfully';
+  response.success = true;
+  return response;
+};
+
+// tell us more about yourself
+exports.bio = async (userid, updateObj, correlationID) => {
+  const bio = await User.findOneAndUpdate({ _id: userid }, updateObj, { new: true });
+  if (!bio) {
+    logger.error(`${correlationID}: <<<< User not found`);
+    throw new Error('User not found');
+  }
+  logger.trace(`${correlationID}: <<<< Exiting userManagementService.Bio()`);
+  const response = {};
+  response.data = bio;
+  response.message = 'Bio Successful Added';
+  response.success = true;
+  return response;
 };

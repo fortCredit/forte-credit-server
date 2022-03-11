@@ -7,7 +7,6 @@ const { JWTSECRET } = require('../config');
 
 // const { Schema } = mongoose;
 
-const mailScheduler = require('../utils/mailer');
 const autoIncrementModelID = require('./Counter.model');
 // const sendInbox = require('../services/inbox-service').addInbox;
 
@@ -15,7 +14,7 @@ const UserSchema = mongoose.Schema({
   userID: {
     type: String,
   },
-  fullName: {
+  fullname: {
     type: String,
     required: true,
   },
@@ -36,23 +35,32 @@ const UserSchema = mongoose.Schema({
   referral: {
     type: String,
   },
+  isVerified: {
+    type: Boolean,
+    default: false,
+  },
   channel: {
     type: String,
   },
   token: {
     type: String,
   },
+  bio: {
+    type: String,
+  },
+  nextPwdDue: Date,
+  pwdDue: Boolean,
   gender: {
     type: String,
     enum: ['MALE', 'FEMALE'],
   },
   dateOfBirth: Date,
   homeAddress: String,
+  bvn: String,
   accountRecord: {
     accountNumber: String,
     bankName: String,
     bankCode: String,
-    bvn: String,
   },
   profileImage: String,
   authorization: {
@@ -85,19 +93,6 @@ UserSchema.pre('save', function (next) {
     return;
   }
   autoIncrementModelID('applicationCount', 'userID', this, next, 'FTV');
-});
-UserSchema.post('save', function (doc, next) {
-  // schedule mail service
-  const templateType = 'WELCOMEMAIL';
-  mailScheduler.sendMail(
-    {
-      fullname: this.fullname.split(' ')[0] || '',
-      templateType,
-      userID: this._id.toString(),
-      email: this.email,
-    },
-  );
-  next();
 });
 
 UserSchema.methods.generateAuthToken = async function () {
