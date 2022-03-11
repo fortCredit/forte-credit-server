@@ -56,10 +56,10 @@ const UserSchema = mongoose.Schema({
   },
   dateOfBirth: Date,
   homeAddress: String,
-  bvn: String,
   accountRecord: {
     accountNumber: String,
     bankName: String,
+    bvn: String,
     bankCode: String,
   },
   profileImage: String,

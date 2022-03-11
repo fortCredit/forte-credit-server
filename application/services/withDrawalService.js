@@ -17,20 +17,20 @@ const initializeWithdrawal = async (withdrawalObj, correlationID) => {
 
   // ensure user does not have a fortVestPlan before
   const {
-    user, investmentID, amount, accountNumber, bankCode,
+    user, savingsID, amount, accountNumber, bankCode,
   } = withdrawalObj;
   let newTransaction = {};
-  const getInvestment = await Fortvest.findOne({ user, _id: investmentID });
-  if (!getInvestment) throw new Error('Sorry investment was not found');
-  if (getInvestment.status === 'INACTIVE') {
+  const getSavings = await Fortvest.findOne({ user, _id: savingsID });
+  if (!getSavings) throw new Error('Sorry investment was not found');
+  if (getSavings.status === 'INACTIVE') {
     // check balance on investment
-    if (getInvestment.withdrawalBalance < amount) throw new Error('Sorry, withdrawal cannot be completed as you have insufficient balance');
+    if (getSavings.withdrawalBalance < amount) throw new Error('Sorry, withdrawal cannot be completed as you have insufficient balance');
   } else {
     // set investment to inactive
-    getInvestment.status = 'INACTIVE';
-    getInvestment.withdrawalBalance = getInvestment.totalInvestmentTillDate;
-    await getInvestment.save();
-    if (getInvestment.withdrawalBalance < amount) throw new Error('Sorry, withdrawal cannot be completed as you have insufficient balance');
+    getSavings.status = 'INACTIVE';
+    getSavings.withdrawalBalance = getSavings.totalInvestmentTillDate;
+    await getSavings.save();
+    if (getSavings.withdrawalBalance < amount) throw new Error('Sorry, withdrawal cannot be completed as you have insufficient balance');
   }
 
   // verify account details
@@ -52,7 +52,7 @@ const initializeWithdrawal = async (withdrawalObj, correlationID) => {
       } = createReceipt;
       newTransaction = new Transaction({
         user,
-        investment: investmentID,
+        savings: savingsID,
         transactionType: 'DEBIT',
         description: 'WITHDRAWAL',
 
@@ -70,13 +70,13 @@ const initializeWithdrawal = async (withdrawalObj, correlationID) => {
       };
       newTransaction.withDrawalReceipt = withDrawalReceipt;
       // initialize transfer
-      const initTransfer = await initiateTransfer({ amount, recipient: recipient_code, reason: 'INVESTMENT WITHDRAWAL' });
+      const initTransfer = await initiateTransfer({ amount, recipient: recipient_code, reason: 'SAVINGS WITHDRAWAL' });
       newTransaction.withDrawalReceipt.transferCode = initTransfer.transfer_code;
       await newTransaction.save();
     }
   }
-  getInvestment.withdrawalBalance -= amount;
-  await getInvestment.save();
+  getSavings.withdrawalBalance -= amount;
+  await getSavings.save();
   logger.trace(`${correlationID}: <<<< Exiting withdrawalService.${getFuncName()}`);
   const response = {};
   response.data = newTransaction;
