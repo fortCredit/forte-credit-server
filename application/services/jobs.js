@@ -61,7 +61,7 @@ const getDuePlans = async () => {
     const day = d.setUTCHours(0, 0, 0, 0);
     const e = new Date();
     const night = e.setUTCHours(23, 59, 59, 999);
-    const duePlans = await Fortvest.find({ nextInvestmentDate: { $gte: (day), $lt: (night) }, status: 'ACTIVE' });
+    const duePlans = await Fortvest.find({ nextInvestmentDate: { $gte: (day), $lt: (night) }, status: 'ACTIVE', isAutomated: 'ACTIVE' });
     await runInvestments(duePlans);
   } catch (err) {
     logger.error(`<<<< Job failed due tols ${err}`);

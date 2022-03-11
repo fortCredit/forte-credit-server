@@ -151,6 +151,7 @@ exports.getTransactionByID = async (req, res) => {
     return res.json(response.error(error, message));
   }
 };
+
 // paystack verification
 exports.verifyTransaction = async (req, res) => {
   const correlationID = req.header('x-correlation-id');

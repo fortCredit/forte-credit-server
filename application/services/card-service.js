@@ -95,7 +95,7 @@ const getSingle = async (user, cardid, correlationID) => {
   logger.trace(`${correlationID}: <<<< Exiting fortVestService.${getFuncName()}`);
   const response = {};
   response.data = card;
-  response.message = 'Card retrieved successfully';
+  response.message = 'Card Retrieved Successfully';
   response.success = true;
   return response;
 };

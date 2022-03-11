@@ -5,7 +5,7 @@ const mongoose = require('mongoose');
 const mongoosePaginate = require('mongoose-paginate-v2');
 
 const {
-  FORTVESTFREQ, FORTVESTPLANS, INVESTMENTSTATUS,
+  FORTVESTFREQ, FORTVESTPLANS, SAVINGSSTATUS,
 } = require('../config');
 
 const { Schema } = mongoose;
@@ -13,13 +13,13 @@ const { Schema } = mongoose;
 const autoIncrementModelID = require('./Counter.model');
 
 const FVSchema = mongoose.Schema({
-  investmentID: String,
+  savingsID: String,
   user: {
     type: Schema.Types.ObjectId,
     ref: 'user',
     required: true,
   },
-  planAlias: String,
+
   card: {
     type: Schema.Types.ObjectId,
     ref: 'card',
@@ -30,8 +30,9 @@ const FVSchema = mongoose.Schema({
     enum: FORTVESTPLANS,
   },
   isAutomated: {
-    type: Boolean,
-    default: false,
+    type: String,
+    enum: ['INACTIVE', 'ACTIVE'],
+    default: 'INACTIVE',
   },
   frequency: {
     type: String,
@@ -39,21 +40,32 @@ const FVSchema = mongoose.Schema({
   },
   amount: {
     type: Number,
-    min: 50000,
+  },
+  targetTitle: {
+    type: String,
+  },
+  targetReason: {
+    type: String,
+  },
+  targetAmount: {
+    type: String,
   },
   interestRate: Number,
-  totalInvestmentTillDate: {
+  totalSavingsTillDate: {
     type: Number,
   },
-  investmentLength: {
+  savingsLength: {
     type: Number, // this is expected in days
   },
   balanceWithROI: Number, // after investment has ended, this is totalInestment + ROI
   withdrawalBalance: Number, // withdrawable balance, will reduce with withdrawals
-  investMentEndDate: {
+  savingStartDate: {
     type: Date,
   },
-  nextInvestmentDate: Date,
+  savingsEndDate: {
+    type: Date,
+  },
+  nextSavingDate: Date,
   toRetry: {
     type: Boolean,
     default: false,
@@ -61,7 +73,7 @@ const FVSchema = mongoose.Schema({
   status: {
     type: String,
     uppercase: true,
-    enum: INVESTMENTSTATUS,
+    enum: SAVINGSSTATUS,
     default: 'ACTIVE',
   },
   deleted: {
@@ -79,6 +91,6 @@ FVSchema.pre('save', function (next) {
     next();
     return;
   }
-  autoIncrementModelID('applicationCount', 'investmentID', this, next, 'FRTVEST');
+  autoIncrementModelID('applicationCount', 'savingsID', this, next, 'FRTVEST');
 });
 module.exports = mongoose.model('fortvest', FVSchema);

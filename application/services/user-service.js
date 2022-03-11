@@ -360,3 +360,18 @@ exports.changePwd = async (userid, newPassword, correlationID) => {
   response.success = true;
   return response;
 };
+
+// tell us more about yourself
+exports.bio = async (userid, updateObj, correlationID) => {
+  const bio = await User.findOneAndUpdate({ _id: userid }, updateObj, { new: true });
+  if (!bio) {
+    logger.error(`${correlationID}: <<<< User not found`);
+    throw new Error('User not found');
+  }
+  logger.trace(`${correlationID}: <<<< Exiting userManagementService.Bio()`);
+  const response = {};
+  response.data = bio;
+  response.message = 'Bio Successful Added';
+  response.success = true;
+  return response;
+};
