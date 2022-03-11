@@ -10,5 +10,6 @@ router.get('/transactions/:type/:page/:size', auth, fortvestController.getPlanTr
 router.get('/filtertransactions/:filter/:page/:size', auth, fortvestController.filterTranxHistory);
 router.post('/withdraw', auth, fortvestController.withdrawal);
 router.post('/activate/autosave', auth, fortvestController.activateAutoSave);
+router.get('/list/targetsavings', auth, fortvestController.listTargetSavings);
 
 module.exports = router;

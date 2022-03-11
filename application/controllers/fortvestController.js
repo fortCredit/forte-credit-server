@@ -240,6 +240,25 @@ const activateAutoSave = async (req, res) => {
   }
 };
 
+const listTargetSavings = async (req, res) => {
+  const correlationID = req.header('x-correlation-id');
+  const user = req.user._id;
+  try {
+    const responseData = await fortVestService.listTargetSavings(user, correlationID);
+
+    logger.trace(`${correlationID}: ${responseData.message}`);
+    return res.json(response.success(responseData.data, responseData.message));
+  } catch (err) {
+    logger.debug(`${correlationID}: ${err}`);
+    const error = {};
+    let message = '';
+    err.data ? (error.data = err.data) : (error.data = {});
+    err.name ? (error.name = err.name) : (error.name = 'UnknownError');
+    err.message ? (message = err.message) : (message = 'Something Failed');
+    return res.json(response.error(error, message));
+  }
+};
+
 module.exports = {
   addFortvestPlan,
   getFortvestPlan,
@@ -247,4 +266,5 @@ module.exports = {
   filterTranxHistory,
   withdrawal,
   activateAutoSave,
+  listTargetSavings,
 };

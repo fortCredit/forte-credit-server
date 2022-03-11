@@ -233,6 +233,29 @@ const activateAutoSave = async (
   }
 };
 
+const listTargetSavings = async (user, pageOpt, correlationID) => {
+  logger.trace(`${correlationID}: <<<< Entering fortVestService.${getFuncName()}`);
+  const targetPlan = await Fortvest.countDocuments({ user, planType: 'TARGET-SAVINGS' });
+  const { page, size } = pageOpt;
+  const options = {
+    page: page || 1,
+    limit: size || 10,
+    collation: {
+      locale: 'en',
+    },
+    async useCustomCountFn() {
+      return Promise.resolve(targetPlan);
+    },
+  };
+  const targetSavingsPlan = await Fortvest.paginate({ user, planType: 'TARGET-SAVINGS' }, options);
+  logger.trace(`${correlationID}: <<<< Exiting fortVestService.${getFuncName()}`);
+  const response = {};
+  response.data = targetSavingsPlan;
+  response.message = 'Target Savings retrieved successfully';
+  response.success = true;
+  return response;
+};
+
 module.exports = {
   addFortvestPlan,
   getFortvestPlan,
@@ -240,4 +263,5 @@ module.exports = {
   filterTransactionHistory,
   withdrawal,
   activateAutoSave,
+  listTargetSavings,
 };
