@@ -395,3 +395,72 @@ exports.changePassword = async function (req, res) {
     return res.json(response.error([], error, message));
   }
 };
+
+exports.verifyBVN = async function (req, res) {
+  const correlationID = req.header('x-correlation-id');
+
+  try {
+    const userid = req.user._id;
+
+    logger.trace(`${correlationID}: <<<<<<--Started update bank details flow-->>>>>>`);
+    await requiredFieldValidator(
+      ['bvn'],
+      Object.keys(req.body),
+      correlationID,
+    );
+    logger.trace(`${correlationID}: Validation successful`);
+    const {
+      bvn,
+    } = req.body;
+      // build update object
+    const bankObj = {};
+    bankObj.bvn = bvn;
+
+    logger.trace(`${correlationID}: >>>> Call to userManagementService.updateAccountDetails()`);
+    const serviceResponse = await
+    userManagementService.addBankDetails(userid, bankObj, correlationID);
+    return res.json(response.success(serviceResponse.data, serviceResponse.message));
+  } catch (err) {
+    logger.trace(`${correlationID}: ${err}`);
+    const error = {};
+    let message = '';
+    err.data ? error.data = err.data : error.data = {};
+    err.name ? error.name = err.name : error.name = 'UnknownError';
+    err.message ? message = err.message : message = 'Something Failed';
+    return res.json(response.error(error, message));
+  }
+};
+
+exports.bio = async function (req, res) {
+  const correlationID = req.header('x-correlation-id');
+  const userid = req.user._id;
+  if (req.body) {
+    try {
+      logger.trace(`${correlationID}: <<<<<<--Started update profile flow-->>>>>>`);
+      const {
+        bio,
+      } = req.body;
+      const updateObj = {};
+      if (bio) updateObj.bio = bio;
+      logger.trace(`${correlationID}: >>>> Call to userManagementService.updateProfile()`);
+      const serviceResponse = await
+      userManagementService.bio(userid, updateObj, correlationID);
+      return res.json(response.success(serviceResponse.data, serviceResponse.message));
+    } catch (err) {
+      logger.trace(`${correlationID}: ${err}`);
+      const error = {};
+      let message = '';
+      err.data ? error.data = err.data : error.data = {};
+      err.name ? error.name = err.name : error.name = 'UnknownError';
+      err.message ? message = err.message : message = 'Something Failed';
+      return res.json(response.error(error, message));
+    }
+  } else {
+    const error = {
+      title: 'Bad Request',
+      detail: 'Kindly check the documentation for this API',
+    };
+    const message = 'Failed, Bad Request';
+    return res.json(response.error(error, message));
+  }
+};

@@ -18,6 +18,7 @@ router.post('/getuser', auth, userController.getUser);
 router.post('/password/change', auth, userController.changePassword);
 router.post('/verification', userController.validateAccount);
 router.post('/verification/request', userController.requestValidationToken);
+router.post('/bio', auth, userController.bio);
 
 // router.post('/all', userController.getAllUsers);
 

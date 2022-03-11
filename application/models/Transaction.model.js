@@ -34,7 +34,7 @@ const TransactionSchema = mongoose.Schema({
     enum: TRANSACTIONSTATUS,
     default: 'PENDING',
   },
-  investment: {
+  savings: {
     type: Schema.Types.ObjectId,
     ref: 'fortvest',
   },

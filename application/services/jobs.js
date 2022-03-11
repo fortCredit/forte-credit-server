@@ -22,7 +22,7 @@ const runInvestments = async (investments) => {
     const newTranx = new Transaction();
     newTranx.user = plan.user;
     newTranx.transactionStatus = paystackStatus;
-    newTranx.investment = plan._id;
+    newTranx.savings = plan._id;
     newTranx.paystackReference = paystackReference;
     newTranx.transactionType = 'CREDIT';
     newTranx.description = plan.planType;
@@ -46,9 +46,9 @@ const runInvestments = async (investments) => {
       const today = new Date();
       const nextInv = today.setDate(today.getDate() + next);
       await Fortvest.findOneAndUpdate({ _id: plan._id }, {
-        nextInvestmentDate: nextInv,
+        nextSavingDate: nextInv,
         toRetry: false,
-        $inc: { totalInvestmentTillDate: plan.amount },
+        $inc: { totalSavingsTillDate: plan.amount },
       });
       logger.trace('<<<< Transaction completed successfully');
     }
@@ -61,7 +61,7 @@ const getDuePlans = async () => {
     const day = d.setUTCHours(0, 0, 0, 0);
     const e = new Date();
     const night = e.setUTCHours(23, 59, 59, 999);
-    const duePlans = await Fortvest.find({ nextInvestmentDate: { $gte: (day), $lt: (night) }, status: 'ACTIVE' });
+    const duePlans = await Fortvest.find({ nextSavingDate: { $gte: (day), $lt: (night) }, status: 'ACTIVE', isAutomated: 'ACTIVE' });
     await runInvestments(duePlans);
   } catch (err) {
     logger.error(`<<<< Job failed due tols ${err}`);
@@ -71,10 +71,10 @@ const getDuePlans = async () => {
 const deactivatePlans = async () => {
   try {
     const d = new Date();
-    const getClosedPlans = await Fortvest.find({ investMentEndDate: { $lt: (d) }, status: 'ACTIVE', toRetry: false });
+    const getClosedPlans = await Fortvest.find({ savingsEndDate: { $lt: (d) }, status: 'ACTIVE', toRetry: false });
     getClosedPlans.forEach(async (plan) => {
-      const balanceWithROI = plan.totalInvestmentTillDate
-      + (plan.totalInvestmentTillDate * plan.interestRate);
+      const balanceWithROI = plan.totalSavingsTillDate
+      + (plan.totalSavingsTillDate * plan.interestRate);
       await Fortvest.updateOne({ _id: plan._id }, { status: 'INACTIVE', balanceWithROI, withdrawalBalance: balanceWithROI });
     });
   } catch (err) {
@@ -90,7 +90,7 @@ const handleFailure = async () => {
     yesterday = d.setUTCHours(0, 0, 0, 0);
     const e = new Date();
     const day = e.setUTCHours(0, 0, 0, 0);
-    const failedPlans = await Fortvest.find({ nextInvestmentDate: { $gte: (yesterday), $lt: (day) }, status: 'ACTIVE' });
+    const failedPlans = await Fortvest.find({ nextSavingDate: { $gte: (yesterday), $lt: (day) }, status: 'ACTIVE' });
     await runInvestments(failedPlans);
   } catch (err) {
     logger.error(`<<<< Job failed due tols ${err}`);

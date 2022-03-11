@@ -45,6 +45,9 @@ const UserSchema = mongoose.Schema({
   token: {
     type: String,
   },
+  bio: {
+    type: String,
+  },
   nextPwdDue: Date,
   pwdDue: Boolean,
   gender: {
@@ -53,11 +56,11 @@ const UserSchema = mongoose.Schema({
   },
   dateOfBirth: Date,
   homeAddress: String,
+  bvn: String,
   accountRecord: {
     accountNumber: String,
     bankName: String,
     bankCode: String,
-    bvn: String,
   },
   profileImage: String,
   authorization: {
