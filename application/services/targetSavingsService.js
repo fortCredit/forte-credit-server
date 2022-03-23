@@ -1,65 +1,55 @@
 /* eslint-disable no-underscore-dangle */
 /* eslint-disable func-names */
-const Fortvest = require('../models/Fortvest.model');
+const TargetSavings = require('../models/TargetSavings.model');
 const User = require('../models/User.model');
+const Card = require('../models/Card.model');
 const Transaction = require('../models/Transaction.model');
 const Withdraw = require('../models/Withdrawal.model');
 // const mailScheduler = require('../utils/mailer');
 const logger = require('../utils/logger');
 const { INTERESTRATES } = require('../config');
+const { chargeAuthorize } = require('./transaction-service');
 // const capitalizeFirstLetter = (string) => string[0].toUpperCase() + string.slice(1);
 function getFuncName() {
   return getFuncName.caller.name;
 }
 
-const addFortvestPlan = async (savingObj, correlationID) => {
-  logger.trace(`${correlationID}: <<<< Entering fortVestService.${getFuncName()}`);
-
-  // ensure user does not have a fortVestPlan before
+const createTargetSavings = async (savingObj, correlationID) => {
+  logger.trace(`${correlationID}: <<<< Entering TargetSavingsService.${getFuncName()}`);
   const {
-    user, planType, amount, savingsLength, nextSavingDate,
+    user, amount, savingsLength, nextSavingDate,
     frequency, card, targetReason, targetAmount, targetTitle,
   } = savingObj;
   // get user
   const getUser = await User.findOne({ _id: user });
-  // if (!getUser.accountRecord || !getUser.accountRecord.bvn)
   if (!getUser) throw new Error('Sorry, your account does not exist.');
-  // const getUserPlan = await Fortvest.findOne({ user, planType, status: 'ACTIVE' });
-  // if (getUserPlan) throw new Error(`Sorry!
-  // You already have an active ${planType.toLowerCase()} plan`);
 
-  const newPlan = new Fortvest(savingObj);
-  if (planType === 'FIXED-SAVINGS') {
-    newPlan.frequency = frequency;
-    newPlan.amount = amount;
-    newPlan.interestRate = INTERESTRATES['FIXED-SAVINGS'];
-    newPlan.card = card;
-  } else if (planType === 'TARGET-SAVINGS') {
-    newPlan.targetTitle = targetTitle;
-    newPlan.targetAmount = targetAmount;
-    newPlan.targetReason = targetReason;
-    newPlan.isAutomated = 'ACTIVE';
-    newPlan.frequency = frequency;
-    newPlan.amount = amount;
-    newPlan.interestRate = INTERESTRATES['TARGET-SAVINGS'];
-    newPlan.card = card;
-  }
+  const newPlan = new TargetSavings(savingObj);
+  newPlan.targetTitle = targetTitle;
+  newPlan.targetAmount = targetAmount;
+  newPlan.targetReason = targetReason;
+  newPlan.isAutomated = 'ACTIVE';
+  newPlan.frequency = frequency;
+  newPlan.amount = amount;
+  newPlan.interestRate = INTERESTRATES['TARGET-SAVINGS'];
+  newPlan.card = card;
+  // newPlan.startDate = new Date(nextSavingDate);
   const startDate = new Date(nextSavingDate);
   const savingsEndDate = startDate.setDate(startDate.getDate() + (savingsLength));
   newPlan.startDate = savingsEndDate;
   await newPlan.save();
   // TODO: Perform card transaction to activate card for recurring transaction
-  logger.trace(`${correlationID}: <<<< Exiting fortVestService.${getFuncName()}`);
+  logger.trace(`${correlationID}: <<<< Exiting TargetSavingsService.${getFuncName()}`);
   const response = {};
   response.data = newPlan;
-  response.message = 'New Plan Added Successfully';
+  response.message = 'Target Savings Added Successfully';
   response.success = true;
   return response;
 };
 
-const getFortvestPlan = async (user, pageOpt, correlationID) => {
-  logger.trace(`${correlationID}: <<<< Entering fortVestService.${getFuncName()}`);
-  const planCount = await Fortvest.countDocuments({ user });
+const getTargetSavingsPlan = async (user, pageOpt, correlationID) => {
+  logger.trace(`${correlationID}: <<<< Entering TargetSavingsService.${getFuncName()}`);
+  const planCount = await TargetSavings.countDocuments({ user });
   const { page, size } = pageOpt;
   const options = {
     page: page || 1,
@@ -71,8 +61,8 @@ const getFortvestPlan = async (user, pageOpt, correlationID) => {
       return Promise.resolve(planCount);
     },
   };
-  const getUserPlan = await Fortvest.paginate({ user }, options);
-  logger.trace(`${correlationID}: <<<< Exiting fortVestService.${getFuncName()}`);
+  const getUserPlan = await TargetSavings.paginate({ user }, options);
+  logger.trace(`${correlationID}: <<<< Exiting TargetSavingsService.${getFuncName()}`);
   const response = {};
   response.data = getUserPlan;
   response.message = 'User Plan retrieved successfully';
@@ -94,13 +84,13 @@ const getPlanTranxHistory = async (user, type, pageOpt, correlationID) => {
       return Promise.resolve(transactionCount);
     },
   };
-  logger.trace(`${correlationID}: <<<< Entering fortVestService.${getFuncName()}`);
+  logger.trace(`${correlationID}: <<<< Entering TargetSavingsService.${getFuncName()}`);
   const getTransactonHistory = await Transaction.paginate(
     {
       user, transactionType: tranxType,
     }, options,
   );
-  logger.trace(`${correlationID}: <<<< Exiting fortVestService.${getFuncName()}`);
+  logger.trace(`${correlationID}: <<<< Exiting TargetSavingsService.${getFuncName()}`);
   const response = {};
   response.data = getTransactonHistory;
   response.message = 'Transaction History retrieved successfully';
@@ -121,9 +111,9 @@ const filterTransactionHistory = async (user, filter, pageOpt, correlationID) =>
       return Promise.resolve(transactionCount);
     },
   };
-  logger.trace(`${correlationID}: <<<< Entering fortVestService.${getFuncName()}`);
+  logger.trace(`${correlationID}: <<<< Entering TargetSavingsService.${getFuncName()}`);
   const getTransactonHistory = await Transaction.paginate({ user, description: filter }, options);
-  logger.trace(`${correlationID}: <<<< Exiting fortVestService.${getFuncName()}`);
+  logger.trace(`${correlationID}: <<<< Exiting TargetSavingsService.${getFuncName()}`);
   const response = {};
   response.data = getTransactonHistory;
   response.message = 'Transaction History retrieved successfully';
@@ -132,7 +122,7 @@ const filterTransactionHistory = async (user, filter, pageOpt, correlationID) =>
 };
 
 const withdrawal = async (withdrawObj, correlationID) => {
-  logger.trace(`${correlationID}: <<<< Entering fortVestService.${getFuncName()}`);
+  logger.trace(`${correlationID}: <<<< Entering TargetSavingsService.${getFuncName()}`);
 
   // Check if user does not have an existing Plan
   const {
@@ -143,11 +133,11 @@ const withdrawal = async (withdrawObj, correlationID) => {
   if (!getUser.accountRecord) throw new Error('Sorry, your account record needs to be completed first.');
 
   // get user plan type
-  const getUserPlan = await Fortvest.findOne({ user, planType });
+  const getUserPlan = await TargetSavings.findOne({ user, planType });
   if (!getUserPlan) throw new Error('Sorry, wrong plan. Kindly contact support');
 
   // get user total investment
-  const getTotalInvestment = await Fortvest.find({ user });
+  const getTotalInvestment = await TargetSavings.find({ user });
   const balance = (getTotalInvestment[0].totalInvestmentTillDate);
   if (amount > balance) throw new Error('Sorry you don\'t have enough money in your investment plan');
 
@@ -162,7 +152,7 @@ const withdrawal = async (withdrawObj, correlationID) => {
   withdraw.balance = newBalance;
   await withdraw.save();
 
-  logger.trace(`${correlationID}: <<<< Exiting fortVestService.${getFuncName()}`);
+  logger.trace(`${correlationID}: <<<< Exiting TargetSavingsService.${getFuncName()}`);
   const response = {};
   response.data = withdraw;
   response.message = 'Completed, your withdrawal application has been completed';
@@ -170,72 +160,9 @@ const withdrawal = async (withdrawObj, correlationID) => {
   return response;
 };
 
-// const activateAutoSave = async (user, correlationID) => {
-//   logger.trace(`${correlationID}: <<<< Entering fortVestService.${getFuncName()}`);
-
-//   const autosaveStatus = await Fortvest.findOne(
-// { user, planType: 'FIXED-SAVINGS' }).sort({ _id: -1 });
-
-//   let changeStatus = '';
-//   if (autosaveStatus.isAutomated === 'ACTIVE') {
-//     changeStatus = await Fortvest.UpdateOne({ user },
-//       { $set: { isAutomated: 'ACTIVE' } });
-//   }
-//   changeStatus = await Fortvest.updateOne({ user },
-//     { $set: { isAutomated: 'INACTIVE' } });
-
-//   // TODO: Perform card transaction to activate card for recurring transaction
-//   logger.trace(`${correlationID}: <<<< Exiting fortVestService.${getFuncName()}`);
-//   const response = {};
-//   response.data = changeStatus;
-//   response.message = 'AutoSave Activated Successfully';
-//   response.success = true;
-//   return response;
-// };
-
-const activateAutoSave = async (
-  user,
-  // autosaveStatus,
-  correlationID,
-) => {
-  try {
-    logger.trace(
-      `${correlationID}: <<<< entering updateAutosaveStatus() service`,
-    );
-    const autosaveStatus = await Fortvest.findOne(
-      { user, planType: 'FIXED-SAVINGS' },
-    ).sort({ _id: -1 });
-
-    let updateAutosaveStatus = '';
-    if (autosaveStatus.isAutomated === 'ACTIVE') {
-      updateAutosaveStatus = await Fortvest.findOneAndUpdate(
-        { user },
-        { isAutomated: 'INACTIVE' },
-        { new: true },
-      ).sort({ _id: -1 });
-    } else {
-      updateAutosaveStatus = await Fortvest.findOneAndUpdate(
-        { user },
-        { isAutomated: 'ACTIVE' },
-        { new: true },
-      ).sort({ _id: -1 });
-    }
-    logger.trace(
-      `${correlationID}: <<<< exiting updateAutosaveStatus() service`,
-    );
-    const response = {};
-    response.message = 'Data updated successful';
-    response.data = updateAutosaveStatus;
-    response.success = true;
-    return response;
-  } catch (err) {
-    throw new Error(err.message);
-  }
-};
-
 const listTargetSavings = async (user, pageOpt, correlationID) => {
-  logger.trace(`${correlationID}: <<<< Entering fortVestService.${getFuncName()}`);
-  const targetPlan = await Fortvest.countDocuments({ user, planType: 'TARGET-SAVINGS' });
+  logger.trace(`${correlationID}: <<<< Entering TargetSavingsService.${getFuncName()}`);
+  const targetPlan = await TargetSavings.countDocuments({ user });
   const { page, size } = pageOpt;
   const options = {
     page: page || 1,
@@ -247,8 +174,8 @@ const listTargetSavings = async (user, pageOpt, correlationID) => {
       return Promise.resolve(targetPlan);
     },
   };
-  const targetSavingsPlan = await Fortvest.paginate({ user, planType: 'TARGET-SAVINGS' }, options);
-  logger.trace(`${correlationID}: <<<< Exiting fortVestService.${getFuncName()}`);
+  const targetSavingsPlan = await TargetSavings.paginate({ user }, options);
+  logger.trace(`${correlationID}: <<<< Exiting TargetSavingsService.${getFuncName()}`);
   const response = {};
   response.data = targetSavingsPlan;
   response.message = 'Target Savings retrieved successfully';
@@ -256,12 +183,53 @@ const listTargetSavings = async (user, pageOpt, correlationID) => {
   return response;
 };
 
+const topUp = async (planObj, correlationID) => {
+  logger.trace(`${correlationID}: <<<< Entering TargetSavingsService.${getFuncName()}`);
+  try {
+    const {
+      user, amount, card, targetSavingsID,
+    } = planObj;
+    const getCard = await Card.findOne({ _id: card, user });
+    if (!getCard) throw new Error('Hello');
+
+    // const reqBody = { email: getUser.email, amount, authorizationId };
+
+    let paystackStatus = '';
+    let paystackReference = '';
+
+    const autoCharge = await chargeAuthorize(getCard._id, amount);
+    if (autoCharge.status === 'success') {
+      paystackStatus = 'SUCCESSFUL';
+    } else paystackStatus = 'FAILED';
+    // log transaction
+    paystackReference = autoCharge.reference;
+    const newTranx = new Transaction();
+    newTranx.user = user;
+    newTranx.transactionStatus = paystackStatus;
+    newTranx.savings = 'TARGET-SAVINGS';
+    newTranx.savingsID = targetSavingsID;
+    newTranx.paystackReference = paystackReference;
+    newTranx.transactionType = 'CREDIT';
+    newTranx.description = 'TARGET-SAVINGS(TOP-UP)';
+    newTranx.amount = amount;
+    newTranx.save();
+    logger.trace(`${correlationID}: <<<< Exiting TargetSavingsService.${getFuncName()}`);
+    const response = {};
+    response.data = newTranx;
+    response.message = 'Transaction Made Successfully';
+    response.success = true;
+    return response;
+  } catch (err) {
+    throw new Error(err.message);
+  }
+};
+
 module.exports = {
-  addFortvestPlan,
-  getFortvestPlan,
+  createTargetSavings,
+  getTargetSavingsPlan,
   getPlanTranxHistory,
   filterTransactionHistory,
   withdrawal,
-  activateAutoSave,
   listTargetSavings,
+  topUp,
 };

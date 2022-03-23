@@ -2,6 +2,7 @@ const APISERVICE = require('../utils/api-service');
 const logger = require('../utils/logger');
 const Transaction = require('../models/Transaction.model');
 const Card = require('../models/Card.model');
+const TargetSavings = require('../models/TargetSavings.model');
 
 const { PAYSTACK_SECRET } = require('../config');
 
@@ -152,10 +153,11 @@ exports.paystackInit = async (reqBody, correlationID) => {
         'post',
       )
     ).data;
+
     if (paystackInitResponse.status) {
       // update transaction status
       const transactionObj = {};
-      // transactionObj.transactionID = reqBody.transactionID;
+      transactionObj.transactionID = reqBody.transactionID;
       transactionObj.amount = reqBody.amount;
       transactionObj.tripID = reqBody.tripID;
       transactionObj.paystackReference = paystackInitResponse.data.reference;
@@ -232,6 +234,38 @@ exports.verifyTransaction = async (reqObj, correlationID) => {
     throw new Error(err.message);
   }
 };
+
+// exports.verifyTransaction = async (reqObj, correlationID) => {
+//   try {
+//     logger.trace(
+//       `${correlationID}: >>>> Entering transactionCordService.verifyTransaction()`,
+//     );
+//     const { paystackRef, userID } = reqObj;
+//     // set pay stack request options
+//     const url = `https://api.paystack.co/transaction/verify/${paystackRef}`;
+//     const headers = {
+//       authorization: `Bearer ${process.env.PAYSTACK_SECRET}`,
+//       'cache-control': 'no-cache',
+//     };
+//     const paystackVerifyResponse = (
+//       await APISERVICE.request(
+//         correlationID,
+//         'PAYSTACK',
+//         url,
+//         headers,
+//         {},
+//         'get',
+//       )
+//     ).data;
+//     logger.trace(`${correlationID}: >>>> Logging transaction`);
+//     const response = {};
+//     response.data = paystackVerifyResponse.data;
+//     response.message = 'Transaction verification completed';
+//     return response;
+//   } catch (err) {
+//     throw new Error(err.message);
+//   }
+// };
 
 exports.chargeAuthorize = async (card, amount, correlationID) => {
   try {
@@ -403,5 +437,29 @@ exports.verifyTransfer = async (transfercode, correlationID) => {
     return verifyResponse.data;
   } catch (err) {
     throw new Error(err.message);
+  }
+};
+
+exports.webHook = async (reqObj, correlationID) => {
+  // Retrieve the request's body
+  const paystackResponse = reqObj;
+  const paystackReference = paystackResponse.data.reference;
+  // Do something with event
+  if (paystackResponse.event === 'charge.success') {
+    const transaction = await Transaction.findOne({ paystackReference });
+    // eslint-disable-next-line no-underscore-dangle
+    const tranID = transaction._id;
+    const verifyTrans = await this.verifyTransaction(
+      {
+        paystackReference,
+        transactionID: tranID,
+        userID: transaction.user,
+      }, correlationID,
+    );
+    if (transaction.savings === 'TARGET-SAVINGS') {
+      await TargetSavings.findOneAndUpdate({ _id: transaction.savingsID }, {
+        $inc: { totalSavingsTillDate: verifyTrans.data.amount },
+      });
+    }
   }
 };

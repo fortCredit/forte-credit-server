@@ -1,15 +1,15 @@
 /* eslint-disable no-underscore-dangle */
 const schedule = require('node-cron');
 // const mailScheduler = require('./mailer');
-const Fortvest = require('../models/Fortvest.model');
+const TargetSavings = require('../models/TargetSavings.model');
 const Transaction = require('../models/Transaction.model');
 const { chargeAuthorize } = require('./transaction-service');
 const logger = require('../utils/logger');
 // const pnScehuler = require('../utils/pn');
 const { RETRYFREQ } = require('../config');
 
-const runInvestments = async (investments) => {
-  investments.forEach(async (plan) => {
+const runSavings = async (savings) => {
+  savings.forEach(async (plan) => {
     let paystackStatus = '';
     let paystackReference = '';
     // TODO: integrate paystack here
@@ -33,8 +33,8 @@ const runInvestments = async (investments) => {
       const d = new Date();
       logger.trace(`<<<< Transaction failed retry in ${RETRYFREQ} hrs`);
       const next6hrs = d.setTime(d.getTime() + (RETRYFREQ * 60 * 60 * 1000));
-      await Fortvest.findOneAndUpdate({ _id: plan._id }, {
-        nextInvestmentDate: next6hrs,
+      await TargetSavings.findOneAndUpdate({ _id: plan._id }, {
+        nextSavingDate: next6hrs,
         toRetry: true,
       });
       newTranx.toRetry = next6hrs;
@@ -45,7 +45,7 @@ const runInvestments = async (investments) => {
       else if (plan.frequency === 'MONTHLY') next = 31;
       const today = new Date();
       const nextInv = today.setDate(today.getDate() + next);
-      await Fortvest.findOneAndUpdate({ _id: plan._id }, {
+      await TargetSavings.findOneAndUpdate({ _id: plan._id }, {
         nextSavingDate: nextInv,
         toRetry: false,
         $inc: { totalSavingsTillDate: plan.amount },
@@ -61,8 +61,8 @@ const getDuePlans = async () => {
     const day = d.setUTCHours(0, 0, 0, 0);
     const e = new Date();
     const night = e.setUTCHours(23, 59, 59, 999);
-    const duePlans = await Fortvest.find({ nextSavingDate: { $gte: (day), $lt: (night) }, status: 'ACTIVE', isAutomated: 'ACTIVE' });
-    await runInvestments(duePlans);
+    const duePlans = await TargetSavings.find({ nextSavingDate: { $gte: (day), $lt: (night) }, status: 'ACTIVE', isAutomated: 'ACTIVE' });
+    await runSavings(duePlans);
   } catch (err) {
     logger.error(`<<<< Job failed due tols ${err}`);
   }
@@ -71,11 +71,11 @@ const getDuePlans = async () => {
 const deactivatePlans = async () => {
   try {
     const d = new Date();
-    const getClosedPlans = await Fortvest.find({ savingsEndDate: { $lt: (d) }, status: 'ACTIVE', toRetry: false });
+    const getClosedPlans = await TargetSavings.find({ savingsEndDate: { $lt: (d) }, status: 'ACTIVE', toRetry: false });
     getClosedPlans.forEach(async (plan) => {
       const balanceWithROI = plan.totalSavingsTillDate
       + (plan.totalSavingsTillDate * plan.interestRate);
-      await Fortvest.updateOne({ _id: plan._id }, { status: 'INACTIVE', balanceWithROI, withdrawalBalance: balanceWithROI });
+      await TargetSavings.updateOne({ _id: plan._id }, { status: 'INACTIVE', balanceWithROI, withdrawalBalance: balanceWithROI });
     });
   } catch (err) {
     logger.error(`<<<< Job failed due tols ${err}`);
@@ -84,14 +84,14 @@ const deactivatePlans = async () => {
 
 const handleFailure = async () => {
   try {
-    // pick investments meant to have been run since yesterday
+    // pick savings meant to have been run since yesterday
     const d = new Date();
     let yesterday = d.setDate(d.getDate() - 1);
     yesterday = d.setUTCHours(0, 0, 0, 0);
     const e = new Date();
     const day = e.setUTCHours(0, 0, 0, 0);
-    const failedPlans = await Fortvest.find({ nextSavingDate: { $gte: (yesterday), $lt: (day) }, status: 'ACTIVE' });
-    await runInvestments(failedPlans);
+    const failedPlans = await TargetSavings.find({ nextSavingDate: { $gte: (yesterday), $lt: (day) }, status: 'ACTIVE' });
+    await runSavings(failedPlans);
   } catch (err) {
     logger.error(`<<<< Job failed due tols ${err}`);
   }
@@ -99,7 +99,7 @@ const handleFailure = async () => {
 
 exports.job = async () => {
   // this runs every 1 HR '0 */1 * * *'
-  schedule.schedule('0 */1 * * *', async () => {
+  schedule.schedule('*/1 * * * *', async () => {
     getDuePlans();
   });
   // this runs every 12am '0 0 * * *'

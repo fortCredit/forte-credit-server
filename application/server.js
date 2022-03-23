@@ -6,7 +6,8 @@ const bodyParser = require('body-parser');
 const connectDB = require('./config/connections/mongodb');
 const config = require('./config/index');
 const userRoute = require('./routes/user.route');
-const fortvestRoute = require('./routes/fortvest.route');
+const targetSavingsRoute = require('./routes/targetSavings.route');
+const fixedSavingsRoute = require('./routes/fixedSavings.route');
 const transactionRoutes = require('./routes/transaction.route');
 const cardRoutes = require('./routes/card.route');
 const logger = require('./utils/logger');
@@ -39,7 +40,8 @@ app.get('/healthcheck', async (req, res) => {
 });
 
 app.use('/v1/user', userRoute);
-app.use('/v1/fortvest', fortvestRoute);
+app.use('/v1/targetsavings', targetSavingsRoute);
+app.use('/v1/fixedsavings', fixedSavingsRoute);
 app.use('/v1/transaction', transactionRoutes);
 app.use('/v1/card', cardRoutes);
 

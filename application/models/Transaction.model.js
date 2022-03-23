@@ -4,7 +4,7 @@
 const mongoose = require('mongoose');
 const mongoosePaginate = require('mongoose-paginate-v2');
 
-const { Schema } = mongoose;
+// const { Schema } = mongoose;
 const autoIncrementModelID = require('./Counter.model');
 const { TRANSACTIONSTATUS, TRANSACTIONDESC, TRANSACTIONTYPE } = require('../config');
 
@@ -35,9 +35,14 @@ const TransactionSchema = mongoose.Schema({
     default: 'PENDING',
   },
   savings: {
-    type: Schema.Types.ObjectId,
-    ref: 'fortvest',
+    type: String,
+    enum: ['FIXED-SAVINGS', 'TARGET-SAVINGS'],
   },
+  savingsID: String,
+  // savings: {
+  //   type: Schema.Types.ObjectId,
+  //   ref: 'fortvest',
+  // },
   failedDueTo: String,
   toRetry: Date,
   paystackReference: {

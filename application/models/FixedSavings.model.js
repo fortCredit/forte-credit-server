@@ -5,14 +5,14 @@ const mongoose = require('mongoose');
 const mongoosePaginate = require('mongoose-paginate-v2');
 
 const {
-  FORTVESTFREQ, FORTVESTPLANS, SAVINGSSTATUS,
+  FORTVESTFREQ, SAVINGSSTATUS,
 } = require('../config');
 
 const { Schema } = mongoose;
 
 const autoIncrementModelID = require('./Counter.model');
 
-const FVSchema = mongoose.Schema({
+const FixedSavingsSchema = mongoose.Schema({
   savingsID: String,
   user: {
     type: Schema.Types.ObjectId,
@@ -25,10 +25,7 @@ const FVSchema = mongoose.Schema({
     ref: 'card',
     required: true,
   },
-  planType: {
-    type: String,
-    enum: FORTVESTPLANS,
-  },
+
   isAutomated: {
     type: String,
     enum: ['INACTIVE', 'ACTIVE'],
@@ -40,15 +37,6 @@ const FVSchema = mongoose.Schema({
   },
   amount: {
     type: Number,
-  },
-  targetTitle: {
-    type: String,
-  },
-  targetReason: {
-    type: String,
-  },
-  targetAmount: {
-    type: String,
   },
   interestRate: Number,
   totalSavingsTillDate: {
@@ -84,13 +72,13 @@ const FVSchema = mongoose.Schema({
 }, {
   timestamps: true,
 });
-FVSchema.plugin(mongoosePaginate);
+FixedSavingsSchema.plugin(mongoosePaginate);
 
-FVSchema.pre('save', function (next) {
+FixedSavingsSchema.pre('save', function (next) {
   if (!this.isNew) {
     next();
     return;
   }
-  autoIncrementModelID('applicationCount', 'savingsID', this, next, 'FRTVEST');
+  autoIncrementModelID('applicationCount', 'savingsID', this, next, 'FXSV');
 });
-module.exports = mongoose.model('fortvest', FVSchema);
+module.exports = mongoose.model('fixed-savings', FixedSavingsSchema);

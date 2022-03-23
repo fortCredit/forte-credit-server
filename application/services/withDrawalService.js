@@ -1,6 +1,7 @@
 /* eslint-disable no-underscore-dangle */
 /* eslint-disable func-names */
-const Fortvest = require('../models/Fortvest.model');
+const FixedSavings = require('../models/FixedSavings.model');
+// const TargetSavings = require('../models/TargetSavings.model');
 const Transaction = require('../models/Transaction.model');
 // const mailScheduler = require('../utils/mailer');
 const logger = require('../utils/logger');
@@ -20,7 +21,7 @@ const initializeWithdrawal = async (withdrawalObj, correlationID) => {
     user, savingsID, amount, accountNumber, bankCode,
   } = withdrawalObj;
   let newTransaction = {};
-  const getSavings = await Fortvest.findOne({ user, _id: savingsID });
+  const getSavings = await FixedSavings.findOne({ user, _id: savingsID });
   if (!getSavings) throw new Error('Sorry investment was not found');
   if (getSavings.status === 'INACTIVE') {
     // check balance on investment

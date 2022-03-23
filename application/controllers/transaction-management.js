@@ -4,7 +4,7 @@
 const response = require('../utils/responseAdapter');
 const logger = require('../utils/logger');
 const transactionManagementService = require('../services/transaction-service');
-
+const { PAYSTACK_SECRET } = require('../config');
 const {
   requiredFieldValidator,
 } = require('../utils/validators');
@@ -164,17 +164,17 @@ exports.verifyTransaction = async (req, res) => {
     // validate required fields
     logger.trace(`${correlationID}: Validating required fields`);
     await requiredFieldValidator(
-      ['paystackRef', 'transactionID'],
+      ['paystackRef'],
       Object.keys(req.body),
       correlationID,
     );
     const {
       paystackRef,
-      transactionID,
+      // transactionID,
     } = req.body;
     // building transaction object
     const transactionDetails = await transactionManagementService.verifyTransaction(
-      { paystackRef, transactionID, userID }, correlationID,
+      { paystackRef, userID }, correlationID,
     );
 
     return res.json(
@@ -188,5 +188,22 @@ exports.verifyTransaction = async (req, res) => {
     err.name ? (error.name = err.name) : (error.name = 'UnknownError');
     err.message ? (message = err.message) : (message = 'Something Failed');
     return res.json(response.error(error, message));
+  }
+};
+
+exports.webHook = async (req, res) => {
+  const correlationID = req.header('x-correlation-id');
+  res.send(200);
+  // const userID = req.user._id;
+  try {
+    logger.trace(
+      `${correlationID}: <<<<<<-- Entered webhook flow -->>>>>>`,
+    );
+    const hash = crypto.createHmac('sha512', PAYSTACK_SECRET).update(JSON.stringify(req.body)).digest('hex');
+    if (hash === req.headers['x-paystack-signature']) {
+      await transactionManagementService.webHook(req.body, correlationID);
+    }
+  } catch (err) {
+    throw new Error(err.message);
   }
 };
