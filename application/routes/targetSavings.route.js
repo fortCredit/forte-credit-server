@@ -11,6 +11,7 @@ router.get('/transactions/:type/:page/:size', auth, targetSavingsController.getP
 router.get('/filtertransactions/:filter/:page/:size', auth, targetSavingsController.filterTranxHistory);
 router.post('/withdraw', auth, targetSavingsController.withdrawal);
 router.get('/list/targetsavings', auth, targetSavingsController.listTargetSavings);
-router.post('/topUp', auth, targetSavingsController.topUp);
+router.post('/topup', auth, targetSavingsController.topUp);
+router.post('/totalsavings', auth, targetSavingsController.totalSavings);
 
 module.exports = router;

@@ -190,7 +190,7 @@ const topUp = async (planObj, correlationID) => {
       user, amount, card, targetSavingsID,
     } = planObj;
     const getCard = await Card.findOne({ _id: card, user });
-    if (!getCard) throw new Error('Hello');
+    if (!getCard) throw new Error('No Card Found, Kindly Add a Card');
 
     // const reqBody = { email: getUser.email, amount, authorizationId };
 
@@ -201,6 +201,16 @@ const topUp = async (planObj, correlationID) => {
     if (autoCharge.status === 'success') {
       paystackStatus = 'SUCCESSFUL';
     } else paystackStatus = 'FAILED';
+
+    const getTargetSavings = await TargetSavings.findOne(
+      { _id: targetSavingsID, user },
+    );
+    const updateSavings = getTargetSavings.totalSavingsTillDate + amount;
+    const result = await TargetSavings.findOneAndUpdate(
+      { _id: targetSavingsID, user }, { totalSavingsTillDate: updateSavings },
+    );
+
+    if (!result) throw new Error('Kindly Select a Target Savings to Top-Up');
     // log transaction
     paystackReference = autoCharge.reference;
     const newTranx = new Transaction();
@@ -213,6 +223,7 @@ const topUp = async (planObj, correlationID) => {
     newTranx.description = 'TARGET-SAVINGS(TOP-UP)';
     newTranx.amount = amount;
     newTranx.save();
+
     logger.trace(`${correlationID}: <<<< Exiting TargetSavingsService.${getFuncName()}`);
     const response = {};
     response.data = newTranx;
@@ -224,6 +235,35 @@ const topUp = async (planObj, correlationID) => {
   }
 };
 
+const totalSavings = async (userID, correlationID) => {
+  logger.trace(`${correlationID}: <<<< Entering TargetSavingsService.${getFuncName()}`);
+  try {
+    const getTotalSavings = await TargetSavings.aggregate([
+      {
+        $match:
+        {
+          user: userID,
+        },
+      },
+      {
+        $group:
+          {
+            _id: 'count',
+            count: { $sum: '$totalSavingsTillDate' },
+          },
+      },
+    ]);
+    const outputObj = getTotalSavings[0].count;
+    logger.trace(`${correlationID}: <<<< Exiting TargetSavingsService.${getFuncName()}`);
+    const response = {};
+    response.data = outputObj;
+    response.message = 'Total TargetSavings retrieved Successfully';
+    response.success = true;
+    return response;
+  } catch (err) {
+    throw new Error(err.message);
+  }
+};
 module.exports = {
   createTargetSavings,
   getTargetSavingsPlan,
@@ -232,4 +272,5 @@ module.exports = {
   withdrawal,
   listTargetSavings,
   topUp,
+  totalSavings,
 };
