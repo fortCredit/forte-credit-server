@@ -16,7 +16,22 @@ const apiAccessAuthMiddleware = require('./middleware/api-access-auth');
 const { job } = require('./services/jobs');
 
 const app = express();
-app.use(cors());
+const origin = '*';
+app.use(cors({
+  allowedHeaders: [
+    'Origin',
+    'X-Requested-With',
+    'Content-Type',
+    'Accept',
+    'Authorization',
+    'X-Access-Token',
+  ],
+  exposedHeaders: ['sessionId'],
+  origin,
+  methods: 'OPTIONS,GET,HEAD,PUT,PATCH,POST,DELETE',
+  preflightContinue: false,
+  optionsSuccessStatus: 200,
+}));
 // sent the maximum input
 app.use(bodyParser.json({ limit: 16777216 }));
 // parse application/vnd.api+json as json

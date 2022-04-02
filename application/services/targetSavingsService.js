@@ -18,7 +18,7 @@ const createTargetSavings = async (savingObj, correlationID) => {
   logger.trace(`${correlationID}: <<<< Entering TargetSavingsService.${getFuncName()}`);
   const {
     user, amount, savingsLength, nextSavingDate,
-    frequency, card, targetReason, targetAmount, targetTitle,
+    frequency, card, targetReason, targetAmount, image, targetTitle,
   } = savingObj;
   // get user
   const getUser = await User.findOne({ _id: user });
@@ -33,6 +33,7 @@ const createTargetSavings = async (savingObj, correlationID) => {
   newPlan.amount = amount;
   newPlan.interestRate = INTERESTRATES['TARGET-SAVINGS'];
   newPlan.card = card;
+  newPlan.image = image;
   // newPlan.startDate = new Date(nextSavingDate);
   const startDate = new Date(nextSavingDate);
   const savingsEndDate = startDate.setDate(startDate.getDate() + (savingsLength));
@@ -126,19 +127,19 @@ const withdrawal = async (withdrawObj, correlationID) => {
 
   // Check if user does not have an existing Plan
   const {
-    user, amount, planType,
+    user, amount,
   } = withdrawObj;
   // get user
   const getUser = await User.findOne({ _id: user });
   if (!getUser.accountRecord) throw new Error('Sorry, your account record needs to be completed first.');
 
   // get user plan type
-  const getUserPlan = await TargetSavings.findOne({ user, planType });
+  const getUserPlan = await TargetSavings.findOne({ user });
   if (!getUserPlan) throw new Error('Sorry, wrong plan. Kindly contact support');
 
   // get user total investment
-  const getTotalInvestment = await TargetSavings.find({ user });
-  const balance = (getTotalInvestment[0].totalInvestmentTillDate);
+  const getTotalSavings = await TargetSavings.find({ user });
+  const balance = (getTotalSavings[0].totalSavingsTillDate);
   if (amount > balance) throw new Error('Sorry you don\'t have enough money in your investment plan');
 
   // New Balance after withdrawal

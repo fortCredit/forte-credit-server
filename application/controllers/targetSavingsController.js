@@ -39,6 +39,7 @@ const createTargetSavings = async (req, res) => {
       targetTitle,
       targetReason,
       targetAmount,
+      image,
     } = req.body;
     logger.trace(`${correlationID}: Validation Successful`);
     const planObj = {};
@@ -52,6 +53,7 @@ const createTargetSavings = async (req, res) => {
     planObj.targetAmount = targetAmount;
     planObj.targetReason = targetReason;
     planObj.targetTitle = targetTitle;
+    planObj.image = image;
     const responseData = await targetSavingsService.createTargetSavings(planObj, correlationID);
 
     logger.trace(`${correlationID}: ${responseData}`);
