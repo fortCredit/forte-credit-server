@@ -30,6 +30,7 @@ app.use(cors({
   exposedHeaders: ['sessionId'],
   origin,
   methods: 'OPTIONS,GET,HEAD,PUT,PATCH,POST,DELETE',
+  credentials: true,
   preflightContinue: false,
   optionsSuccessStatus: 200,
 }));
