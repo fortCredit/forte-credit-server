@@ -25,6 +25,7 @@ app.use(cors({
     'Accept',
     'Authorization',
     'X-Access-Token',
+    'X-Api-Key',
   ],
   exposedHeaders: ['sessionId'],
   origin,
