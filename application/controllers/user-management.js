@@ -464,3 +464,21 @@ exports.bio = async function (req, res) {
     return res.json(response.error(error, message));
   }
 };
+
+exports.totalSavings = async (req, res) => {
+  const correlationID = req.header('x-correlation-id');
+  const userID = req.user._id;
+  try {
+    const responseData = await userManagementService.totalSavings(userID, correlationID);
+    logger.trace(`${correlationID}: ${responseData}`);
+    return res.json(response.success(responseData.data, responseData.message));
+  } catch (err) {
+    logger.debug(`${correlationID}: ${err}`);
+    const error = {};
+    let message = '';
+    err.data ? (error.data = err.data) : (error.data = {});
+    err.name ? (error.name = err.name) : (error.name = 'UnknownError');
+    err.message ? (message = err.message) : (message = 'Something Failed');
+    return res.json(response.error(error, message));
+  }
+};

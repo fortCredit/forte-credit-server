@@ -204,21 +204,20 @@ const withdrawal = async (req, res) => {
   }
 };
 
-exports.totalSavings = async (req, res) => {
+const totalSavings = async (req, res) => {
   const correlationID = req.header('x-correlation-id');
   const userID = req.user._id;
   try {
     const responseData = await fixedSavingsService.totalSavings(userID, correlationID);
-    logger.trace(`${correlationID}: ${responseData.message}`);
+    logger.trace(`${correlationID}: ${responseData}`);
     return res.json(response.success(responseData.data, responseData.message));
   } catch (err) {
     logger.debug(`${correlationID}: ${err}`);
-    const message = err.message || 'Something Failed';
-    const error = {
-      data: err.data || {},
-      name: err.name || 'UnknownError',
-      message,
-    };
+    const error = {};
+    let message = '';
+    err.data ? (error.data = err.data) : (error.data = {});
+    err.name ? (error.name = err.name) : (error.name = 'UnknownError');
+    err.message ? (message = err.message) : (message = 'Something Failed');
     return res.json(response.error(error, message));
   }
 };
@@ -299,4 +298,5 @@ module.exports = {
   activateAutoSave,
   listFixedSavings,
   saveNow,
+  totalSavings,
 };

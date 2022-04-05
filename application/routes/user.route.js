@@ -19,6 +19,7 @@ router.post('/password/change', auth, userController.changePassword);
 router.post('/verification', userController.validateAccount);
 router.post('/verification/request', userController.requestValidationToken);
 router.post('/bio', auth, userController.bio);
+router.post('/totalsavings', auth, userController.totalSavings);
 
 // router.post('/all', userController.getAllUsers);
 

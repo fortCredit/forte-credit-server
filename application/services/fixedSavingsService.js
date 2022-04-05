@@ -2,10 +2,12 @@
 /* eslint-disable func-names */
 const FixedSavings = require('../models/FixedSavings.model');
 const User = require('../models/User.model');
+const Card = require('../models/Card.model');
 const Transaction = require('../models/Transaction.model');
 const Withdraw = require('../models/Withdrawal.model');
 // const mailScheduler = require('../utils/mailer');
 const logger = require('../utils/logger');
+const { chargeAuthorize } = require('./transaction-service');
 const { INTERESTRATES } = require('../config');
 // const capitalizeFirstLetter = (string) => string[0].toUpperCase() + string.slice(1);
 function getFuncName() {
@@ -38,29 +40,6 @@ const createFixedSavings = async (savingObj, correlationID) => {
   const response = {};
   response.data = newPlan;
   response.message = 'New Plan Added Successfully';
-  response.success = true;
-  return response;
-};
-
-const getFortvestPlan = async (user, pageOpt, correlationID) => {
-  logger.trace(`${correlationID}: <<<< Entering fortVestService.${getFuncName()}`);
-  const planCount = await FixedSavings.countDocuments({ user });
-  const { page, size } = pageOpt;
-  const options = {
-    page: page || 1,
-    limit: size || 10,
-    collation: {
-      locale: 'en',
-    },
-    async useCustomCountFn() {
-      return Promise.resolve(planCount);
-    },
-  };
-  const getUserPlan = await FixedSavings.paginate({ user }, options);
-  logger.trace(`${correlationID}: <<<< Exiting fortVestService.${getFuncName()}`);
-  const response = {};
-  response.data = getUserPlan;
-  response.message = 'User Plan retrieved successfully';
   response.success = true;
   return response;
 };
@@ -221,12 +200,110 @@ const listFixedSavings = async (user, pageOpt, correlationID) => {
   return response;
 };
 
+const totalSavings = async (userID, correlationID) => {
+  logger.trace(`${correlationID}: <<<< Entering FixedSavingsService.${getFuncName()}`);
+  try {
+    const getTotalSavings = await FixedSavings.aggregate([
+      {
+        $match:
+        {
+          user: userID,
+        },
+      },
+      {
+        $group:
+          {
+            _id: 'count',
+            count: { $sum: '$totalSavingsTillDate' },
+          },
+      },
+    ]);
+    const outputObj = getTotalSavings[0].count;
+    logger.trace(`${correlationID}: <<<< Exiting FixedSavingsService.${getFuncName()}`);
+    const response = {};
+    response.data = outputObj;
+    response.message = 'Total FixedSavings retrieved Successfully';
+    response.success = true;
+    return response;
+  } catch (err) {
+    throw new Error(err.message);
+  }
+};
+
+const saveNow = async (planObj, correlationID) => {
+  logger.trace(`${correlationID}: <<<< Entering FixedSavingsService.${getFuncName()}`);
+  try {
+    const {
+      user, amount, card,
+    } = planObj;
+    const getCard = await Card.findOne({ _id: card, user });
+    if (!getCard) throw new Error('No Card Found, Kindly Add a Card');
+
+    // const reqBody = { email: getUser.email, amount, authorizationId };
+
+    let paystackStatus = '';
+    let paystackReference = '';
+
+    const autoCharge = await chargeAuthorize(getCard._id, amount);
+    if (autoCharge.status === 'success') {
+      paystackStatus = 'SUCCESSFUL';
+    } else paystackStatus = 'FAILED';
+
+    // const getTotalSavings = await FixedSavings.findOne({})
+    const getTotalSavings = await FixedSavings.aggregate([
+      {
+        $match:
+        {
+          user,
+        },
+      },
+      {
+        $group:
+          {
+            _id: 'count',
+            count: { $sum: '$totalSavingsTillDate' },
+          },
+      },
+    ]);
+    let updateSavings;
+    let newTranx;
+    if (getTotalSavings) {
+      updateSavings = getTotalSavings[0].count + amount;
+      const result = await FixedSavings.findOneAndUpdate(
+        { user }, { totalSavingsTillDate: updateSavings },
+      );
+
+      if (!result) throw new Error('Kindly Select a Fixed Savings to SaveNow');
+      // log transaction
+      paystackReference = autoCharge.reference;
+      newTranx = new Transaction();
+      newTranx.user = user;
+      newTranx.transactionStatus = paystackStatus;
+      newTranx.savings = 'FIXED-SAVINGS';
+      newTranx.paystackReference = paystackReference;
+      newTranx.transactionType = 'CREDIT';
+      newTranx.description = 'SAVE-NOW';
+      newTranx.amount = amount;
+      newTranx.save();
+    }
+    logger.trace(`${correlationID}: <<<< Exiting FixedSavingsService.${getFuncName()}`);
+    const response = {};
+    response.data = newTranx;
+    response.message = 'Transaction Made Successfully';
+    response.success = true;
+    return response;
+  } catch (err) {
+    throw new Error(err.message);
+  }
+};
+
 module.exports = {
   createFixedSavings,
-  getFortvestPlan,
   getPlanTranxHistory,
   filterTransactionHistory,
   withdrawal,
   activateAutoSave,
   listFixedSavings,
+  saveNow,
+  totalSavings,
 };

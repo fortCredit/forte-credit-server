@@ -8,11 +8,16 @@ const Token = require('../models/RegToken.model');
 const ResetPassword = require('../models/PasswordResets.model');
 const logger = require('../utils/logger');
 const authtoken = require('../utils/authtoken');
+const FixedSavings = require('../models/FixedSavings.model');
+const TargetSavings = require('../models/TargetSavings.model');
 // const ValidateSms = require('../models/validationToken.model');
 // const { sendsms } = require('../utils/smsservice');
 const payStackService = require('./transaction-service');
 const mail = require('./mail-gun');
 
+function getFuncName() {
+  return getFuncName.caller.name;
+}
 const {
   ExpiredTokenError,
   UserAlreadyExistsError,
@@ -374,4 +379,54 @@ exports.bio = async (userid, updateObj, correlationID) => {
   response.message = 'Bio Successful Added';
   response.success = true;
   return response;
+};
+
+exports.totalSavings = async (userID, correlationID) => {
+  let getTargetSavings;
+  let getFixedSavings;
+  logger.trace(`${correlationID}: <<<< Entering TotalSavingsService.${getFuncName()}`);
+  try {
+    getTargetSavings = await TargetSavings.aggregate([
+      {
+        $match:
+        {
+          user: userID,
+        },
+      },
+      {
+        $group:
+          {
+            _id: 'count',
+            count: { $sum: '$totalSavingsTillDate' },
+          },
+      },
+    ]);
+    getFixedSavings = await FixedSavings.aggregate([
+      {
+        $match:
+        {
+          user: userID,
+        },
+      },
+      {
+        $group:
+          {
+            _id: 'count',
+            count: { $sum: '$totalSavingsTillDate' },
+          },
+      },
+    ]);
+
+    const TS = getTargetSavings <= 0 ? 0 : getTargetSavings[0].count;
+    const FS = getFixedSavings <= 0 ? 0 : getFixedSavings[0].count;
+    const outputObj = (TS + FS);
+    logger.trace(`${correlationID}: <<<< Exiting TotalSavingsService.${getFuncName()}`);
+    const response = {};
+    response.data = outputObj;
+    response.message = 'Total Savings retrieved Successfully';
+    response.success = true;
+    return response;
+  } catch (err) {
+    throw new Error(err.message);
+  }
 };

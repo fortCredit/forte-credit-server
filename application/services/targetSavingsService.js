@@ -221,7 +221,7 @@ const topUp = async (planObj, correlationID) => {
     newTranx.savingsID = targetSavingsID;
     newTranx.paystackReference = paystackReference;
     newTranx.transactionType = 'CREDIT';
-    newTranx.description = 'TARGET-SAVINGS(TOP-UP)';
+    newTranx.description = 'TOP-UP';
     newTranx.amount = amount;
     newTranx.save();
 
@@ -254,6 +254,7 @@ const totalSavings = async (userID, correlationID) => {
           },
       },
     ]);
+    if (getTotalSavings <= 0) throw new Error('No Saving, Kindly Fund your account');
     const outputObj = getTotalSavings[0].count;
     logger.trace(`${correlationID}: <<<< Exiting TargetSavingsService.${getFuncName()}`);
     const response = {};
