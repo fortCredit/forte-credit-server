@@ -210,7 +210,7 @@ const totalSavings = async (userID, correlationID) => {
   logger.trace(`${correlationID}: <<<< Entering FixedSavingsService.${getFuncName()}`);
   try {
     const getTotalSavings = await FixedSavings.findOne({ user: userID });
-    const outputObj = getTotalSavings.totalInvestmentTillDate;
+    const outputObj = getTotalSavings.totalSavingsTillDate;
     logger.trace(`${correlationID}: <<<< Exiting FixedSavingsService.${getFuncName()}`);
     const response = {};
     response.data = outputObj;
