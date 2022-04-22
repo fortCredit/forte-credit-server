@@ -220,17 +220,15 @@ const totalSavings = async (userID, correlationID) => {
           {
             _id: 'count',
             totalSavings: { $sum: '$totalSavingsTillDate' },
-            totalInterest: { $sum: '$interestRate' },
           },
       },
     ]);
-    const outputObj = {};
+
+    let outputObj;
     if (getTotalSavings <= 0) {
-      outputObj.totalSavings = 0;
-      outputObj.totalInterest = 0;
+      outputObj = 0;
     } else {
-      outputObj.totalSavings = getTotalSavings[0].totalSavings;
-      outputObj.totalInterest = getTotalSavings[0].totalInterest;
+      outputObj = getTotalSavings[0].totalSavings;
     }
     logger.trace(`${correlationID}: <<<< Exiting TargetSavingsService.${getFuncName()}`);
     const response = {};
