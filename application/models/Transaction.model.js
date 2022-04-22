@@ -23,7 +23,7 @@ const TransactionSchema = mongoose.Schema({
   email: String,
   description: {
     type: String,
-    enum: TRANSACTIONDESC,
+    enum: ['SAVE-NOW', 'AUTO-SAVE', 'TOP-UP'],
   },
   transactionType: {
     type: String,
@@ -36,7 +36,7 @@ const TransactionSchema = mongoose.Schema({
   },
   savings: {
     type: String,
-    enum: ['FIXED-SAVINGS', 'TARGET-SAVINGS'],
+    enum: TRANSACTIONDESC,
   },
   savingsID: String,
   // savings: {

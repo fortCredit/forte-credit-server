@@ -322,7 +322,9 @@ exports.addBankDetails = async (userid, bankDetails, correlationID) => {
       account_number: accountNumber,
       bank_code: bankCode,
     };
+    // console.log('Hello before bvn');
     const bvnVerification = (await payStackService.verifyBVN(bvnObj, correlationID)).data;
+    // console.log('Hello After bvn');
     const userObj = {};
     if (bvnVerification.status === true) {
       if (bvnVerification.data.is_blacklisted) throw new Error('Sorry! the account number is blacklisted, you cannot continue with this process');
@@ -397,7 +399,8 @@ exports.totalSavings = async (userID, correlationID) => {
         $group:
           {
             _id: 'count',
-            count: { $sum: '$totalSavingsTillDate' },
+            totalSavings: { $sum: '$totalSavingsTillDate' },
+            totalInterest: { $sum: '$interestRate' },
           },
       },
     ]);
@@ -412,14 +415,20 @@ exports.totalSavings = async (userID, correlationID) => {
         $group:
           {
             _id: 'count',
-            count: { $sum: '$totalSavingsTillDate' },
+            totalSavings: { $sum: '$totalSavingsTillDate' },
+            totalInterest: { $sum: '$interestRate' },
           },
       },
     ]);
 
-    const TS = getTargetSavings <= 0 ? 0 : getTargetSavings[0].count;
-    const FS = getFixedSavings <= 0 ? 0 : getFixedSavings[0].count;
-    const outputObj = (TS + FS);
+    const TS = getTargetSavings <= 0 ? 0 : getTargetSavings[0].totalSavings;
+    const TSI = getTargetSavings <= 0 ? 0 : getTargetSavings[0].totalInterest;
+    const FS = getFixedSavings <= 0 ? 0 : getFixedSavings[0].totalSavings;
+    const FSI = getTargetSavings <= 0 ? 0 : getTargetSavings[0].totalInterest;
+
+    const outputObj = {};
+    outputObj.totalSavings = (TS + FS);
+    outputObj.totalInterest = (TSI + FSI);
     logger.trace(`${correlationID}: <<<< Exiting TotalSavingsService.${getFuncName()}`);
     const response = {};
     response.data = outputObj;

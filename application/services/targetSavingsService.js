@@ -30,7 +30,7 @@ const createTargetSavings = async (savingObj, correlationID) => {
   newPlan.isAutomated = 'ACTIVE';
   newPlan.frequency = frequency;
   newPlan.amount = amount;
-  newPlan.interestRate = INTERESTRATES['TARGET-SAVINGS'];
+  newPlan.interestRate = 0;
   newPlan.card = card;
   newPlan.image = image;
   // newPlan.startDate = new Date(nextSavingDate);
@@ -172,8 +172,11 @@ const topUp = async (planObj, correlationID) => {
       } else paystackStatus = 'FAILED';
 
       const updateSavings = getTargetSavings.totalSavingsTillDate + amount;
+      const updateInterest = updateSavings * INTERESTRATES['TARGET-SAVINGS'];
+
       const result = await TargetSavings.findOneAndUpdate(
-        { _id: targetSavingsID, user }, { totalSavingsTillDate: updateSavings },
+        { _id: targetSavingsID, user },
+        { totalSavingsTillDate: updateSavings, interestRate: updateInterest },
       );
 
       if (!result) throw new Error('Kindly Select a Target Savings to Top-Up');
@@ -216,14 +219,19 @@ const totalSavings = async (userID, correlationID) => {
         $group:
           {
             _id: 'count',
-            count: { $sum: '$totalSavingsTillDate' },
+            totalSavings: { $sum: '$totalSavingsTillDate' },
+            totalInterest: { $sum: '$interestRate' },
           },
       },
     ]);
-    let outputObj;
+    const outputObj = {};
     if (getTotalSavings <= 0) {
-      outputObj = 0;
-    } else { outputObj = getTotalSavings[0].count; }
+      outputObj.totalSavings = 0;
+      outputObj.totalInterest = 0;
+    } else {
+      outputObj.totalSavings = getTotalSavings[0].totalSavings;
+      outputObj.totalInterest = getTotalSavings[0].totalInterest;
+    }
     logger.trace(`${correlationID}: <<<< Exiting TargetSavingsService.${getFuncName()}`);
     const response = {};
     response.data = outputObj;

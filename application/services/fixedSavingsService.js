@@ -4,7 +4,6 @@ const FixedSavings = require('../models/FixedSavings.model');
 const User = require('../models/User.model');
 const Card = require('../models/Card.model');
 const Transaction = require('../models/Transaction.model');
-const Withdraw = require('../models/Withdrawal.model');
 // const mailScheduler = require('../utils/mailer');
 const logger = require('../utils/logger');
 const { chargeAuthorize } = require('./transaction-service');
@@ -101,45 +100,6 @@ const filterTransactionHistory = async (user, filter, pageOpt, correlationID) =>
   return response;
 };
 
-const withdrawal = async (withdrawObj, correlationID) => {
-  logger.trace(`${correlationID}: <<<< Entering fortVestService.${getFuncName()}`);
-
-  // Check if user does not have an existing Plan
-  const {
-    user, amount, planType,
-  } = withdrawObj;
-  // get user
-  const getUser = await User.findOne({ _id: user });
-  if (!getUser.accountRecord) throw new Error('Sorry, your account record needs to be completed first.');
-
-  // get user plan type
-  const getUserPlan = await FixedSavings.findOne({ user, planType });
-  if (!getUserPlan) throw new Error('Sorry, wrong plan. Kindly contact support');
-
-  // get user total investment
-  const getTotalInvestment = await FixedSavings.find({ user });
-  const balance = (getTotalInvestment[0].totalInvestmentTillDate);
-  if (amount > balance) throw new Error('Sorry you don\'t have enough money in your investment plan');
-
-  // New Balance after withdrawal
-  const newBalance = balance - amount;
-
-  // Create new instance of withdrawal
-  const withdraw = new Withdraw(withdrawObj);
-  // withdraw.planType = getUserPlan.planType;
-  withdraw.bankName = getUser.accountRecord.bankName;
-  withdraw.accountNumber = getUser.accountRecord.accountNumber;
-  withdraw.balance = newBalance;
-  await withdraw.save();
-
-  logger.trace(`${correlationID}: <<<< Exiting fortVestService.${getFuncName()}`);
-  const response = {};
-  response.data = withdraw;
-  response.message = 'Completed, your withdrawal application has been completed';
-  response.success = true;
-  return response;
-};
-
 const activateAutoSave = async (
   user,
   // autosaveStatus,
@@ -210,7 +170,9 @@ const totalSavings = async (userID, correlationID) => {
   logger.trace(`${correlationID}: <<<< Entering FixedSavingsService.${getFuncName()}`);
   try {
     const getTotalSavings = await FixedSavings.findOne({ user: userID });
-    const outputObj = getTotalSavings.totalSavingsTillDate;
+    const outputObj = {};
+    outputObj.totalSavings = getTotalSavings.totalSavingsTillDate;
+    outputObj.totalInterest = getTotalSavings.interestRate;
     logger.trace(`${correlationID}: <<<< Exiting FixedSavingsService.${getFuncName()}`);
     const response = {};
     response.data = outputObj;
@@ -255,8 +217,9 @@ const saveNow = async (planObj, correlationID) => {
       //   result.save();
       // } else {
       updateSavings = totalSaving + amount;
+      const updateInterest = (updateSavings * INTERESTRATES['FIXED-SAVINGS']);
       await FixedSavings.findOneAndUpdate(
-        { user }, { totalSavingsTillDate: updateSavings },
+        { user }, { totalSavingsTillDate: updateSavings, interestRate: updateInterest },
       );
       // }
     } else if (!getTotalSavings) {
@@ -295,7 +258,6 @@ module.exports = {
   createFixedSavings,
   getPlanTranxHistory,
   filterTransactionHistory,
-  withdrawal,
   activateAutoSave,
   listFixedSavings,
   saveNow,

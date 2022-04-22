@@ -4,6 +4,7 @@ const schedule = require('node-cron');
 const TargetSavings = require('../models/TargetSavings.model');
 const Transaction = require('../models/Transaction.model');
 const { chargeAuthorize } = require('./transaction-service');
+const { INTERESTRATES } = require('../config');
 const logger = require('../utils/logger');
 // const pnScehuler = require('../utils/pn');
 const { RETRYFREQ } = require('../config');
@@ -22,10 +23,11 @@ const runSavings = async (savings) => {
     const newTranx = new Transaction();
     newTranx.user = plan.user;
     newTranx.transactionStatus = paystackStatus;
-    newTranx.savings = plan._id;
+    newTranx.savingsID = plan._id;
+    newTranx.savings = 'TARGET-SAVINGS';
     newTranx.paystackReference = paystackReference;
     newTranx.transactionType = 'CREDIT';
-    newTranx.description = plan.planType;
+    newTranx.description = 'AUTO-SAVE';
     newTranx.amount = plan.amount;
     if (paystackStatus === 'FAILED') {
       // set next trial to next 6 hrs
@@ -45,10 +47,14 @@ const runSavings = async (savings) => {
       else if (plan.frequency === 'MONTHLY') next = 31;
       const today = new Date();
       const nextInv = today.setDate(today.getDate() + next);
+      const updateSavings = plan.totalSavingsTillDate + plan.amount;
+      const updateInterest = await (updateSavings * INTERESTRATES['TARGET-SAVINGS']);
+
       await TargetSavings.findOneAndUpdate({ _id: plan._id }, {
         nextSavingDate: nextInv,
+        interestRate: updateInterest,
         toRetry: false,
-        $inc: { totalSavingsTillDate: plan.amount },
+        $inc: { totalSavingsTillDate: plan.amount, daysLeft: plan.savingsLength - 1 },
       });
       logger.trace('<<<< Transaction completed successfully');
     }
@@ -73,8 +79,8 @@ const deactivatePlans = async () => {
     const d = new Date();
     const getClosedPlans = await TargetSavings.find({ savingsEndDate: { $lt: (d) }, status: 'ACTIVE', toRetry: false });
     getClosedPlans.forEach(async (plan) => {
-      const balanceWithROI = plan.totalSavingsTillDate
-      + (plan.totalSavingsTillDate * plan.interestRate);
+      const balanceWithROI = (plan.totalSavingsTillDate + plan.interestRate);
+      // const getTotal = plan.totalSavingsTillDate === plan.targetAmount ? status = 'INACTIVE' : 0;
       await TargetSavings.updateOne({ _id: plan._id }, { status: 'INACTIVE', balanceWithROI, withdrawalBalance: balanceWithROI });
     });
   } catch (err) {
