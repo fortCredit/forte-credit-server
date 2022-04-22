@@ -5,6 +5,7 @@ const fixedSavingsController = require('../controllers/fixedSavingsController');
 const auth = require('../middleware/user-auth');
 // user
 router.post('/create/fixedsavings', auth, fixedSavingsController.createFixedSavings);
+router.post('/update/fixedsavings', auth, fixedSavingsController.updateFixedSavings);
 router.get('/transactions/:type/:page/:size', auth, fixedSavingsController.getPlanTranxHistory);
 router.get('/filtertransactions/:filter/:page/:size', auth, fixedSavingsController.filterTranxHistory);
 router.post('/withdraw', auth, fixedSavingsController.withdrawal);

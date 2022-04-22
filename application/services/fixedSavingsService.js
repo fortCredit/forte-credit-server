@@ -33,7 +33,7 @@ const createFixedSavings = async (savingObj, correlationID) => {
     newPlan = new FixedSavings(savingObj);
     newPlan.frequency = frequency;
     newPlan.amount = amount;
-    newPlan.interestRate = INTERESTRATES['FIXED-SAVINGS'];
+    newPlan.interestRate = 0;
     newPlan.card = card;
     const startDate = new Date(nextSavingDate);
     const savingsEndDate = startDate.setDate(startDate.getDate() + (savingsLength));
@@ -45,6 +45,24 @@ const createFixedSavings = async (savingObj, correlationID) => {
   const response = {};
   response.data = newPlan;
   response.message = 'New Plan Added Successfully';
+  response.success = true;
+  return response;
+};
+
+const updateFixedSavings = async (user, planObj, correlationID) => {
+  // confirm user does not exist
+  const updateFixedSaving = await FixedSavings.findOneAndUpdate(
+    { user }, planObj, { new: true },
+  );
+  if (!updateFixedSaving) {
+    logger.error(`${correlationID}: <<<< Savings not found`);
+    throw new Error('Savings not found');
+  }
+
+  logger.trace(`${correlationID}: <<<< Exiting FixedSavingsService.updateFixedSavings()`);
+  const response = {};
+  response.data = updateFixedSaving;
+  response.message = 'Update Fixed Savings Successful';
   response.success = true;
   return response;
 };
@@ -261,6 +279,7 @@ const saveNow = async (planObj, correlationID) => {
 
 module.exports = {
   createFixedSavings,
+  updateFixedSavings,
   getPlanTranxHistory,
   filterTransactionHistory,
   activateAutoSave,
