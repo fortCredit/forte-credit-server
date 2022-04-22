@@ -4,7 +4,6 @@ const TargetSavings = require('../models/TargetSavings.model');
 const User = require('../models/User.model');
 const Card = require('../models/Card.model');
 const Transaction = require('../models/Transaction.model');
-const Withdraw = require('../models/Withdrawal.model');
 // const mailScheduler = require('../utils/mailer');
 const logger = require('../utils/logger');
 const { INTERESTRATES } = require('../config');
@@ -122,45 +121,6 @@ const filterTransactionHistory = async (user, filter, pageOpt, correlationID) =>
   return response;
 };
 
-const withdrawal = async (withdrawObj, correlationID) => {
-  logger.trace(`${correlationID}: <<<< Entering TargetSavingsService.${getFuncName()}`);
-
-  // Check if user does not have an existing Plan
-  const {
-    user, amount,
-  } = withdrawObj;
-  // get user
-  const getUser = await User.findOne({ _id: user });
-  if (!getUser.accountRecord) throw new Error('Sorry, your account record needs to be completed first.');
-
-  // get user plan type
-  const getUserPlan = await TargetSavings.findOne({ user });
-  if (!getUserPlan) throw new Error('Sorry, wrong plan. Kindly contact support');
-
-  // get user total investment
-  const getTotalSavings = await TargetSavings.find({ user });
-  const balance = (getTotalSavings[0].totalSavingsTillDate);
-  if (amount > balance) throw new Error('Sorry you don\'t have enough money in your investment plan');
-
-  // New Balance after withdrawal
-  const newBalance = balance - amount;
-
-  // Create new instance of withdrawal
-  const withdraw = new Withdraw(withdrawObj);
-  // withdraw.planType = getUserPlan.planType;
-  withdraw.bankName = getUser.accountRecord.bankName;
-  withdraw.accountNumber = getUser.accountRecord.accountNumber;
-  withdraw.balance = newBalance;
-  await withdraw.save();
-
-  logger.trace(`${correlationID}: <<<< Exiting TargetSavingsService.${getFuncName()}`);
-  const response = {};
-  response.data = withdraw;
-  response.message = 'Completed, your withdrawal application has been completed';
-  response.success = true;
-  return response;
-};
-
 const listTargetSavings = async (user, pageOpt, correlationID) => {
   logger.trace(`${correlationID}: <<<< Entering TargetSavingsService.${getFuncName()}`);
   const targetPlan = await TargetSavings.countDocuments({ user });
@@ -194,43 +154,49 @@ const topUp = async (planObj, correlationID) => {
     if (!getCard) throw new Error('No Card Found, Kindly Add a Card');
 
     // const reqBody = { email: getUser.email, amount, authorizationId };
-
-    let paystackStatus = '';
-    let paystackReference = '';
-
-    const autoCharge = await chargeAuthorize(getCard._id, amount);
-    if (autoCharge.status === 'success') {
-      paystackStatus = 'SUCCESSFUL';
-    } else paystackStatus = 'FAILED';
-
     const getTargetSavings = await TargetSavings.findOne(
       { _id: targetSavingsID, user },
     );
-    const updateSavings = getTargetSavings.totalSavingsTillDate + amount;
-    const result = await TargetSavings.findOneAndUpdate(
-      { _id: targetSavingsID, user }, { totalSavingsTillDate: updateSavings },
-    );
+    if (getTargetSavings.totalSavingsTillDate === getTargetSavings.targetAmount) {
+      await TargetSavings.findOneAndUpdate(
+        { _id: targetSavingsID, user }, { status: 'INACTIVE' },
+      );
+      throw new Error('You Have Reached Your Target Amount');
+    } else {
+      let paystackStatus = '';
+      let paystackReference = '';
 
-    if (!result) throw new Error('Kindly Select a Target Savings to Top-Up');
-    // log transaction
-    paystackReference = autoCharge.reference;
-    const newTranx = new Transaction();
-    newTranx.user = user;
-    newTranx.transactionStatus = paystackStatus;
-    newTranx.savings = 'TARGET-SAVINGS';
-    newTranx.savingsID = targetSavingsID;
-    newTranx.paystackReference = paystackReference;
-    newTranx.transactionType = 'CREDIT';
-    newTranx.description = 'TOP-UP';
-    newTranx.amount = amount;
-    newTranx.save();
+      const autoCharge = await chargeAuthorize(getCard._id, amount);
+      if (autoCharge.status === 'success') {
+        paystackStatus = 'SUCCESSFUL';
+      } else paystackStatus = 'FAILED';
 
-    logger.trace(`${correlationID}: <<<< Exiting TargetSavingsService.${getFuncName()}`);
-    const response = {};
-    response.data = newTranx;
-    response.message = 'Transaction Made Successfully';
-    response.success = true;
-    return response;
+      const updateSavings = getTargetSavings.totalSavingsTillDate + amount;
+      const result = await TargetSavings.findOneAndUpdate(
+        { _id: targetSavingsID, user }, { totalSavingsTillDate: updateSavings },
+      );
+
+      if (!result) throw new Error('Kindly Select a Target Savings to Top-Up');
+      // log transaction
+      paystackReference = autoCharge.reference;
+      const newTranx = new Transaction();
+      newTranx.user = user;
+      newTranx.transactionStatus = paystackStatus;
+      newTranx.savings = 'TARGET-SAVINGS';
+      newTranx.savingsID = targetSavingsID;
+      newTranx.paystackReference = paystackReference;
+      newTranx.transactionType = 'CREDIT';
+      newTranx.description = 'TOP-UP';
+      newTranx.amount = amount;
+      newTranx.save();
+
+      logger.trace(`${correlationID}: <<<< Exiting TargetSavingsService.${getFuncName()}`);
+      const response = {};
+      response.data = newTranx;
+      response.message = 'Transaction Made Successfully';
+      response.success = true;
+      return response;
+    }
   } catch (err) {
     throw new Error(err.message);
   }
@@ -254,7 +220,7 @@ const totalSavings = async (userID, correlationID) => {
           },
       },
     ]);
-    if (getTotalSavings <= 0) throw new Error('No Saving, Kindly Fund your account');
+    // if (getTotalSavings <= 0) throw new Error('No Savings, Kindly Fund your account');
     const outputObj = getTotalSavings[0].count;
     logger.trace(`${correlationID}: <<<< Exiting TargetSavingsService.${getFuncName()}`);
     const response = {};
@@ -271,7 +237,6 @@ module.exports = {
   getTargetSavingsPlan,
   getPlanTranxHistory,
   filterTransactionHistory,
-  withdrawal,
   listTargetSavings,
   topUp,
   totalSavings,
