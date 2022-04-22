@@ -220,8 +220,10 @@ const totalSavings = async (userID, correlationID) => {
           },
       },
     ]);
-    // if (getTotalSavings <= 0) throw new Error('No Savings, Kindly Fund your account');
-    const outputObj = getTotalSavings[0].count;
+    let outputObj;
+    if (getTotalSavings <= 0) {
+      outputObj = 0;
+    } else { outputObj = getTotalSavings[0].count; }
     logger.trace(`${correlationID}: <<<< Exiting TargetSavingsService.${getFuncName()}`);
     const response = {};
     response.data = outputObj;
