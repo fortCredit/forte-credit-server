@@ -424,7 +424,7 @@ exports.totalSavings = async (userID, correlationID) => {
     const TS = getTargetSavings <= 0 ? 0 : getTargetSavings[0].totalSavings;
     const TSI = getTargetSavings <= 0 ? 0 : getTargetSavings[0].totalInterest;
     const FS = getFixedSavings <= 0 ? 0 : getFixedSavings[0].totalSavings;
-    const FSI = getTargetSavings <= 0 ? 0 : getTargetSavings[0].totalInterest;
+    const FSI = getFixedSavings <= 0 ? 0 : getFixedSavings[0].totalInterest;
 
     const outputObj = {};
     outputObj.totalSavings = (TS + FS);

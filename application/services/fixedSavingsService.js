@@ -226,11 +226,13 @@ const saveNow = async (planObj, correlationID) => {
       );
       // }
     } else if (!getTotalSavings) {
+      const interest = (amount * INTERESTRATES['FIXED-SAVINGS']);
       const newPlan = new FixedSavings();
       newPlan.user = user;
       newPlan.amount = amount;
       newPlan.card = card;
       newPlan.totalSavingsTillDate = amount;
+      newPlan.interestRate = interest;
       await newPlan.save();
     }
 
