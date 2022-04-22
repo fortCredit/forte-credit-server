@@ -26,15 +26,21 @@ const createFixedSavings = async (savingObj, correlationID) => {
   const getUser = await User.findOne({ _id: user });
   if (!getUser) throw new Error('Sorry, your account does not exist.');
 
-  const newPlan = new FixedSavings(savingObj);
-  newPlan.frequency = frequency;
-  newPlan.amount = amount;
-  newPlan.interestRate = INTERESTRATES['FIXED-SAVINGS'];
-  newPlan.card = card;
-  const startDate = new Date(nextSavingDate);
-  const savingsEndDate = startDate.setDate(startDate.getDate() + (savingsLength));
-  newPlan.startDate = savingsEndDate;
-  await newPlan.save();
+  const getFixedSavings = await FixedSavings.findOne({ _id: user });
+  let newPlan;
+  if (getFixedSavings) {
+    throw new Error('Sorry, you have an existing fixed-savings account.');
+  } else {
+    newPlan = new FixedSavings(savingObj);
+    newPlan.frequency = frequency;
+    newPlan.amount = amount;
+    newPlan.interestRate = INTERESTRATES['FIXED-SAVINGS'];
+    newPlan.card = card;
+    const startDate = new Date(nextSavingDate);
+    const savingsEndDate = startDate.setDate(startDate.getDate() + (savingsLength));
+    newPlan.startDate = savingsEndDate;
+    await newPlan.save();
+  }
   // TODO: Perform card transaction to activate card for recurring transaction
   logger.trace(`${correlationID}: <<<< Exiting fortVestService.${getFuncName()}`);
   const response = {};
@@ -203,22 +209,8 @@ const listFixedSavings = async (user, pageOpt, correlationID) => {
 const totalSavings = async (userID, correlationID) => {
   logger.trace(`${correlationID}: <<<< Entering FixedSavingsService.${getFuncName()}`);
   try {
-    const getTotalSavings = await FixedSavings.aggregate([
-      {
-        $match:
-        {
-          user: userID,
-        },
-      },
-      {
-        $group:
-          {
-            _id: 'count',
-            count: { $sum: '$totalSavingsTillDate' },
-          },
-      },
-    ]);
-    const outputObj = getTotalSavings[0].count;
+    const getTotalSavings = await FixedSavings.findOne({ user: userID });
+    const outputObj = getTotalSavings.totalInvestmentTillDate;
     logger.trace(`${correlationID}: <<<< Exiting FixedSavingsService.${getFuncName()}`);
     const response = {};
     response.data = outputObj;
@@ -249,43 +241,45 @@ const saveNow = async (planObj, correlationID) => {
       paystackStatus = 'SUCCESSFUL';
     } else paystackStatus = 'FAILED';
 
-    // const getTotalSavings = await FixedSavings.findOne({})
-    const getTotalSavings = await FixedSavings.aggregate([
-      {
-        $match:
-        {
-          user,
-        },
-      },
-      {
-        $group:
-          {
-            _id: 'count',
-            count: { $sum: '$totalSavingsTillDate' },
-          },
-      },
-    ]);
+    const getTotalSavings = await FixedSavings.findOne({ user });
+
     let updateSavings;
-    let newTranx;
+    // let result;
+
     if (getTotalSavings) {
-      updateSavings = getTotalSavings[0].count + amount;
-      const result = await FixedSavings.findOneAndUpdate(
+      const totalSaving = getTotalSavings.totalSavingsTillDate;
+      // if (totalSaving === null) {
+      //   updateSavings = 0 + amount;
+      //   result = await FixedSavings.findOne({ user });
+      //   result.totalSavingsTillDate = updateSavings;
+      //   result.save();
+      // } else {
+      updateSavings = totalSaving + amount;
+      await FixedSavings.findOneAndUpdate(
         { user }, { totalSavingsTillDate: updateSavings },
       );
-
-      if (!result) throw new Error('Kindly Select a Fixed Savings to SaveNow');
-      // log transaction
-      paystackReference = autoCharge.reference;
-      newTranx = new Transaction();
-      newTranx.user = user;
-      newTranx.transactionStatus = paystackStatus;
-      newTranx.savings = 'FIXED-SAVINGS';
-      newTranx.paystackReference = paystackReference;
-      newTranx.transactionType = 'CREDIT';
-      newTranx.description = 'SAVE-NOW';
-      newTranx.amount = amount;
-      newTranx.save();
+      // }
+    } else if (!getTotalSavings) {
+      const newPlan = new FixedSavings();
+      newPlan.user = user;
+      newPlan.amount = amount;
+      newPlan.card = card;
+      newPlan.totalSavingsTillDate = amount;
+      await newPlan.save();
     }
+
+    // log transaction
+    paystackReference = autoCharge.reference;
+    const newTranx = new Transaction();
+    newTranx.user = user;
+    newTranx.transactionStatus = paystackStatus;
+    newTranx.savings = 'FIXED-SAVINGS';
+    newTranx.paystackReference = paystackReference;
+    newTranx.transactionType = 'CREDIT';
+    newTranx.description = 'SAVE-NOW';
+    newTranx.amount = amount;
+    newTranx.save();
+
     logger.trace(`${correlationID}: <<<< Exiting FixedSavingsService.${getFuncName()}`);
     const response = {};
     response.data = newTranx;
