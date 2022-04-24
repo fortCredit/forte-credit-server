@@ -47,8 +47,9 @@ const runSavings = async (savings) => {
       else if (plan.frequency === 'MONTHLY') next = 31;
       const today = new Date();
       const nextInv = today.setDate(today.getDate() + next);
-      const updateSavings = plan.totalSavingsTillDate + plan.amount;
-      const updateInterest = await (updateSavings * INTERESTRATES['TARGET-SAVINGS']);
+      const totalSavings = !plan.totalSavingsTillDate ? 0 : plan.totalSavingsTillDate;
+      const updateSavings = totalSavings + plan.amount;
+      const updateInterest = (updateSavings * INTERESTRATES['TARGET-SAVINGS']);
 
       await TargetSavings.findOneAndUpdate({ _id: plan._id }, {
         nextSavingDate: nextInv,

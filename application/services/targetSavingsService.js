@@ -157,6 +157,7 @@ const topUp = async (planObj, correlationID) => {
     const getTargetSavings = await TargetSavings.findOne(
       { _id: targetSavingsID, user },
     );
+    if (!getTargetSavings) throw new Error('Selct the right target saving ID');
     if (getTargetSavings.totalSavingsTillDate === getTargetSavings.targetAmount) {
       await TargetSavings.findOneAndUpdate(
         { _id: targetSavingsID, user }, { status: 'INACTIVE' },
@@ -171,15 +172,16 @@ const topUp = async (planObj, correlationID) => {
         paystackStatus = 'SUCCESSFUL';
       } else paystackStatus = 'FAILED';
 
-      const totalSavings = getTargetSavings.totalSavingsTillDate;
+      const getTotalSavings = getTargetSavings.totalSavingsTillDate;
+      const updateSavings = !getTotalSavings ? 0 : getTotalSavings;
 
-      const updateSavings = totalSavings <= 0 ? 0 : totalSavings;
+      const totalSavings = updateSavings + amount;
 
-      const updateInterest = updateSavings * INTERESTRATES['TARGET-SAVINGS'];
+      const updateInterest = totalSavings * INTERESTRATES['TARGET-SAVINGS'];
 
       const result = await TargetSavings.findOneAndUpdate(
         { _id: targetSavingsID, user },
-        { totalSavingsTillDate: updateSavings, interestRate: updateInterest },
+        { totalSavingsTillDate: totalSavings, interestRate: updateInterest },
       );
 
       if (!result) throw new Error('Kindly Select a Target Savings to Top-Up');
