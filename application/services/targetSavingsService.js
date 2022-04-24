@@ -171,7 +171,9 @@ const topUp = async (planObj, correlationID) => {
         paystackStatus = 'SUCCESSFUL';
       } else paystackStatus = 'FAILED';
 
-      const updateSavings = getTargetSavings.totalSavingsTillDate + amount;
+      const totalSavings = getTargetSavings.totalSavingsTillDate;
+      const updateSavings = totalSavings <= 0 ? totalSavings : 0;
+
       const updateInterest = updateSavings * INTERESTRATES['TARGET-SAVINGS'];
 
       const result = await TargetSavings.findOneAndUpdate(
