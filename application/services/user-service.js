@@ -322,9 +322,9 @@ exports.addBankDetails = async (userid, bankDetails, correlationID) => {
       account_number: accountNumber,
       bank_code: bankCode,
     };
-    // console.log('Hello before bvn');
+
     const bvnVerification = (await payStackService.verifyBVN(bvnObj, correlationID)).data;
-    // console.log('Hello After bvn');
+
     const userObj = {};
     if (bvnVerification.status === true) {
       if (bvnVerification.data.is_blacklisted) throw new Error('Sorry! the account number is blacklisted, you cannot continue with this process');

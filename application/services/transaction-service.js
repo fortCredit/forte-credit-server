@@ -6,11 +6,16 @@ const TargetSavings = require('../models/TargetSavings.model');
 
 const { PAYSTACK_SECRET } = require('../config');
 
+function getFuncName() {
+  return getFuncName.caller.name;
+}
+
 exports.verifyBVN = async (reqBody, correlationID) => {
   try {
     logger.trace(
       `${correlationID}: >>>> Entering transactionCordService.matchBVN()`,
     );
+
     const url = 'https://api.paystack.co/bvn/match';
     const headers = {
       authorization: `Bearer ${PAYSTACK_SECRET}`,
@@ -26,6 +31,7 @@ exports.verifyBVN = async (reqBody, correlationID) => {
       reqBody,
       'post',
     );
+
     if (!paystackBvnResponse.status) {
       throw new Error('An error occured when initializing transaction');
     }
@@ -438,6 +444,33 @@ exports.verifyTransfer = async (transfercode, correlationID) => {
   } catch (err) {
     throw new Error(err.message);
   }
+};
+
+exports.transactionLog = async (user, transactionTitle, correlationID) => {
+  logger.trace(`${correlationID}: <<<< Entering TransactionLogService.${getFuncName()}`);
+  const log = await Transaction.countDocuments({ user, description: transactionTitle });
+  const { page, size } = transactionTitle;
+  const options = {
+    page: page || 1,
+    limit: size || 10,
+    collation: {
+      locale: 'en',
+    },
+    async useCustomCountFn() {
+      return Promise.resolve(log);
+    },
+  };
+  const getTransactionLog = await Transaction.paginate(
+    { user, description: transactionTitle },
+    options,
+  );
+
+  logger.trace(`${correlationID}: <<<< Exiting TransactionLogService.${getFuncName()}`);
+  const response = {};
+  response.data = getTransactionLog;
+  response.message = 'Transaction Log Retrieved Successfully';
+  response.success = true;
+  return response;
 };
 
 exports.webHook = async (reqObj, correlationID) => {

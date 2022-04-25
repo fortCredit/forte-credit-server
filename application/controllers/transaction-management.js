@@ -191,6 +191,43 @@ exports.verifyTransaction = async (req, res) => {
   }
 };
 
+exports.transactionLog = async (req, res) => {
+  const correlationID = req.header('x-correlation-id');
+  const user = req.user._id;
+  try {
+    logger.trace(
+      `${correlationID}: <<<<<<-- Entered transaction log flow -->>>>>>`,
+    );
+
+    // validate required fields
+    logger.trace(`${correlationID}: Validating required fields`);
+    await requiredFieldValidator(
+      ['transactionTitle'],
+      Object.keys(req.body),
+      correlationID,
+    );
+    const {
+      transactionTitle,
+    } = req.body;
+    // building transaction object
+    const transactionDetails = await transactionManagementService.transactionLog(
+      user, transactionTitle.toUpperCase(), correlationID,
+    );
+
+    return res.json(
+      response.success(transactionDetails.data, 'Transaction Log Retrieved successfully'),
+    );
+  } catch (err) {
+    logger.debug(`${correlationID}: ${err}`);
+    const error = {};
+    let message = '';
+    err.data ? (error.data = err.data) : (error.data = {});
+    err.name ? (error.name = err.name) : (error.name = 'UnknownError');
+    err.message ? (message = err.message) : (message = 'Something Failed');
+    return res.json(response.error(error, message));
+  }
+};
+
 exports.webHook = async (req, res) => {
   const correlationID = req.header('x-correlation-id');
   res.send(200);
