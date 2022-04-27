@@ -10,8 +10,12 @@ const auth = require('../middleware/user-auth');
 
 router.post('/payment/init', auth, paymentController.initializeTransaction);
 router.post('/payment/verify', auth, paymentController.verifyTransaction);
-router.post('/targetsavings/withdrawal/init', auth, withdrawalController.initializeTargetWithdrawal);
-router.post('/fixedsavings/withdrawal/init', auth, withdrawalController.initializeFixedWithdrawal);
+// router.post('/targetsavings/withdrawal/init',
+// auth,
+// withdrawalController.initializeTargetWithdrawal);
+// router.post('/fixedsavings/withdrawal/init',
+// auth,
+// withdrawalController.initializeFixedWithdrawal);
 router.post('/withdrawal/verify', auth, withdrawalController.verifyWithdrawal);
 router.post('/log', auth, paymentController.transactionLog);
 

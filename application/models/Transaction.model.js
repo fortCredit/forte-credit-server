@@ -23,7 +23,7 @@ const TransactionSchema = mongoose.Schema({
   email: String,
   description: {
     type: String,
-    enum: ['SAVE-NOW', 'AUTO-SAVE', 'TOP-UP', 'CARDREG'],
+    enum: ['SAVE-NOW', 'AUTO-SAVE', 'TOP-UP', 'CARDREG', 'WITHDRAWAL'],
   },
   transactionType: {
     type: String,
