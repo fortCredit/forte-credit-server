@@ -37,6 +37,7 @@ const createTargetSavings = async (savingObj, correlationID) => {
   const startDate = new Date(nextSavingDate);
   const savingsEndDate = startDate.setDate(startDate.getDate() + (savingsLength));
   newPlan.startDate = savingsEndDate;
+  newPlan.daysLeft = savingsLength;
   await newPlan.save();
   // TODO: Perform card transaction to activate card for recurring transaction
   logger.trace(`${correlationID}: <<<< Exiting TargetSavingsService.${getFuncName()}`);

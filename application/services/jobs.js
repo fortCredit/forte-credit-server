@@ -15,6 +15,7 @@ const runSavings = async (savings) => {
     let paystackReference = '';
     // TODO: integrate paystack here
     const autoCharge = await chargeAuthorize(plan.card, plan.amount);
+
     if (autoCharge.status === 'success') {
       paystackStatus = 'COMPLETED';
     } else paystackStatus = 'FAILED';
@@ -55,7 +56,7 @@ const runSavings = async (savings) => {
         nextSavingDate: nextInv,
         interestRate: updateInterest,
         toRetry: false,
-        $inc: { totalSavingsTillDate: plan.amount, daysLeft: plan.savingsLength - 1 },
+        $inc: { totalSavingsTillDate: plan.amount, daysLeft: -1 },
       });
       logger.trace('<<<< Transaction completed successfully');
     }

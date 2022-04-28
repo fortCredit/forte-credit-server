@@ -25,7 +25,7 @@ const createFixedSavings = async (savingObj, correlationID) => {
   const getUser = await User.findOne({ _id: user });
   if (!getUser) throw new Error('Sorry, your account does not exist.');
 
-  const getFixedSavings = await FixedSavings.findOne({ _id: user });
+  const getFixedSavings = await FixedSavings.findOne({ user });
   let newPlan;
   if (getFixedSavings) {
     throw new Error('Sorry, you have an existing fixed-savings account.');
