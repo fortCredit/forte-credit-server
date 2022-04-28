@@ -61,43 +61,6 @@ const createFixedSavings = async (req, res) => {
   }
 };
 
-const updateFixedSavings = async (req, res) => {
-  const correlationID = req.header('x-correlation-id');
-  const user = req.user._id;
-  try {
-    logger.trace(`${correlationID}: <<<<<<-- Started ${getFuncName()} flow -->>>>>>`);
-    const {
-      isAutomated,
-      frequency,
-      amount,
-      savingsLength,
-      card,
-      startDate,
-    } = req.body;
-    logger.trace(`${correlationID}: Validation Successful`);
-    const planObj = {};
-
-    if (isAutomated) planObj.isAutomated = isAutomated;
-    if (frequency) planObj.frequency = frequency;
-    if (amount) planObj.amount = amount;
-    if (savingsLength) planObj.savingsLength = savingsLength;
-    if (startDate) planObj.nextSavingDate = new Date(startDate);
-    if (card) planObj.card = card;
-    const responseData = await fixedSavingsService.updateFixedSavings(user, planObj, correlationID);
-
-    logger.trace(`${correlationID}: ${responseData}`);
-    return res.json(response.success(responseData.data, responseData.message));
-  } catch (err) {
-    logger.debug(`${correlationID}: ${err}`);
-    const error = {};
-    let message = '';
-    err.data ? (error.data = err.data) : (error.data = {});
-    err.name ? (error.name = err.name) : (error.name = 'UnknownError');
-    err.message ? (message = err.message) : (message = 'Something Failed');
-    return res.json(response.error(error, message));
-  }
-};
-
 const saveNow = async (req, res) => {
   const correlationID = req.header('x-correlation-id');
   const user = req.user._id;
@@ -328,7 +291,6 @@ const listFixedSavings = async (req, res) => {
 
 module.exports = {
   createFixedSavings,
-  updateFixedSavings,
   getFortvestPlan,
   getPlanTranxHistory,
   filterTranxHistory,

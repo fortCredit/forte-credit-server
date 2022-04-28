@@ -26,43 +26,31 @@ const createFixedSavings = async (savingObj, correlationID) => {
   if (!getUser) throw new Error('Sorry, your account does not exist.');
 
   const getFixedSavings = await FixedSavings.findOne({ user });
-  let newPlan;
+  let autosave;
   if (getFixedSavings) {
-    throw new Error('Sorry, you have an existing fixed-savings account.');
+    autosave = await FixedSavings.findOneAndUpdate(
+      { user }, savingObj, { new: true },
+    );
+    if (!autosave) {
+      logger.error(`${correlationID}: <<<< Savings not found`);
+      throw new Error('Savings not found');
+    }
   } else {
-    newPlan = new FixedSavings(savingObj);
-    newPlan.frequency = frequency;
-    newPlan.amount = amount;
-    newPlan.interestRate = 0;
-    newPlan.card = card;
+    autosave = new FixedSavings(savingObj);
+    autosave.frequency = frequency;
+    autosave.amount = amount;
+    autosave.interestRate = 0;
+    autosave.card = card;
     const startDate = new Date(nextSavingDate);
     const savingsEndDate = startDate.setDate(startDate.getDate() + (savingsLength));
-    newPlan.startDate = savingsEndDate;
-    await newPlan.save();
+    autosave.startDate = savingsEndDate;
+    await autosave.save();
   }
   // TODO: Perform card transaction to activate card for recurring transaction
   logger.trace(`${correlationID}: <<<< Exiting fortVestService.${getFuncName()}`);
   const response = {};
-  response.data = newPlan;
-  response.message = 'New Plan Added Successfully';
-  response.success = true;
-  return response;
-};
-
-const updateFixedSavings = async (user, planObj, correlationID) => {
-  // confirm user does not exist
-  const updateFixedSaving = await FixedSavings.findOneAndUpdate(
-    { user }, planObj, { new: true },
-  );
-  if (!updateFixedSaving) {
-    logger.error(`${correlationID}: <<<< Savings not found`);
-    throw new Error('Savings not found');
-  }
-
-  logger.trace(`${correlationID}: <<<< Exiting FixedSavingsService.updateFixedSavings()`);
-  const response = {};
-  response.data = updateFixedSaving;
-  response.message = 'Update Fixed Savings Successful';
+  response.data = autosave;
+  response.message = 'AutoSave Settings Added Successfully';
   response.success = true;
   return response;
 };
@@ -280,7 +268,6 @@ const saveNow = async (planObj, correlationID) => {
 
 module.exports = {
   createFixedSavings,
-  updateFixedSavings,
   getPlanTranxHistory,
   filterTransactionHistory,
   activateAutoSave,
