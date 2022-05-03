@@ -238,7 +238,7 @@ const saveNow = async (planObj, correlationID) => {
         const interest = (amount * INTERESTRATES['FIXED-SAVINGS']);
         const newPlan = new FixedSavings();
         newPlan.user = user;
-        newPlan.autosaveStatus = 'INACTIVE';
+        newPlan.isAutomated = 'INACTIVE';
         newPlan.amount = amount;
         newPlan.card = card;
         newPlan.totalSavingsTillDate = amount;
