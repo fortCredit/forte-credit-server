@@ -167,38 +167,40 @@ const topUp = async (planObj, correlationID) => {
     } else {
       let paystackStatus = '';
       let paystackReference = '';
+      let newTranx = {};
 
       const autoCharge = await chargeAuthorize(getCard._id, amount);
       if (autoCharge.status === 'success') {
         paystackStatus = 'SUCCESSFUL';
       } else paystackStatus = 'FAILED';
 
-      const getTotalSavings = getTargetSavings.totalSavingsTillDate;
-      const updateSavings = !getTotalSavings ? 0 : getTotalSavings;
+      if (paystackStatus === 'SUCCESSFUL') {
+        const getTotalSavings = getTargetSavings.totalSavingsTillDate;
+        const updateSavings = !getTotalSavings ? 0 : getTotalSavings;
 
-      const totalSavings = updateSavings + amount;
+        const totalSavings = updateSavings + amount;
 
-      const updateInterest = totalSavings * INTERESTRATES['TARGET-SAVINGS'];
+        const updateInterest = totalSavings * INTERESTRATES['TARGET-SAVINGS'];
 
-      const result = await TargetSavings.findOneAndUpdate(
-        { _id: targetSavingsID, user },
-        { totalSavingsTillDate: totalSavings, interestRate: updateInterest },
-      );
+        const result = await TargetSavings.findOneAndUpdate(
+          { _id: targetSavingsID, user },
+          { totalSavingsTillDate: totalSavings, interestRate: updateInterest },
+        );
 
-      if (!result) throw new Error('Kindly Select a Target Savings to Top-Up');
-      // log transaction
-      paystackReference = autoCharge.reference;
-      const newTranx = new Transaction();
-      newTranx.user = user;
-      newTranx.transactionStatus = paystackStatus;
-      newTranx.savings = 'TARGET-SAVINGS';
-      newTranx.savingsID = targetSavingsID;
-      newTranx.paystackReference = paystackReference;
-      newTranx.transactionType = 'CREDIT';
-      newTranx.description = 'TOP-UP';
-      newTranx.amount = amount;
-      newTranx.save();
-
+        if (!result) throw new Error('Kindly Select a Target Savings to Top-Up');
+        // log transaction
+        paystackReference = autoCharge.reference;
+        newTranx = new Transaction();
+        newTranx.user = user;
+        newTranx.transactionStatus = paystackStatus;
+        newTranx.savings = 'TARGET-SAVINGS';
+        newTranx.savingsID = targetSavingsID;
+        newTranx.paystackReference = paystackReference;
+        newTranx.transactionType = 'CREDIT';
+        newTranx.description = 'TOP-UP';
+        newTranx.amount = amount;
+        newTranx.save();
+      } else throw new Error('Transaction Failed');
       logger.trace(`${correlationID}: <<<< Exiting TargetSavingsService.${getFuncName()}`);
       const response = {};
       response.data = newTranx;

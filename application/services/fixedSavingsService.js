@@ -207,54 +207,57 @@ const saveNow = async (planObj, correlationID) => {
 
     let paystackStatus = '';
     let paystackReference = '';
+    let newTranx = {};
 
     const autoCharge = await chargeAuthorize(getCard._id, amount);
     if (autoCharge.status === 'success') {
       paystackStatus = 'SUCCESSFUL';
     } else paystackStatus = 'FAILED';
 
-    const getTotalSavings = await FixedSavings.findOne({ user });
+    if (paystackStatus === 'SUCCESSFUL') {
+      const getTotalSavings = await FixedSavings.findOne({ user });
 
-    let updateSavings;
-    // let result;
+      let updateSavings;
+      // let result;
 
-    if (getTotalSavings) {
-      const totalSaving = getTotalSavings.totalSavingsTillDate;
-      // if (totalSaving === null) {
-      //   updateSavings = 0 + amount;
-      //   result = await FixedSavings.findOne({ user });
-      //   result.totalSavingsTillDate = updateSavings;
-      //   result.save();
-      // } else {
-      updateSavings = totalSaving + amount;
-      const updateInterest = (updateSavings * INTERESTRATES['FIXED-SAVINGS']);
-      await FixedSavings.findOneAndUpdate(
-        { user }, { totalSavingsTillDate: updateSavings, interestRate: updateInterest },
-      );
+      if (getTotalSavings) {
+        const totalSaving = getTotalSavings.totalSavingsTillDate;
+        // if (totalSaving === null) {
+        //   updateSavings = 0 + amount;
+        //   result = await FixedSavings.findOne({ user });
+        //   result.totalSavingsTillDate = updateSavings;
+        //   result.save();
+        // } else {
+        updateSavings = totalSaving + amount;
+        const updateInterest = ((INTERESTRATES['FIXED-SAVINGS'] / 12) / getTotalSavings.savingsLength) * updateSavings;
+        await FixedSavings.findOneAndUpdate(
+          { user }, { totalSavingsTillDate: updateSavings, interestRate: updateInterest },
+        );
       // }
-    } else if (!getTotalSavings) {
-      const interest = (amount * INTERESTRATES['FIXED-SAVINGS']);
-      const newPlan = new FixedSavings();
-      newPlan.user = user;
-      newPlan.amount = amount;
-      newPlan.card = card;
-      newPlan.totalSavingsTillDate = amount;
-      newPlan.interestRate = interest;
-      await newPlan.save();
-    }
+      } else if (!getTotalSavings) {
+        const interest = (amount * INTERESTRATES['FIXED-SAVINGS']);
+        const newPlan = new FixedSavings();
+        newPlan.user = user;
+        newPlan.autosaveStatus = 'INACTIVE';
+        newPlan.amount = amount;
+        newPlan.card = card;
+        newPlan.totalSavingsTillDate = amount;
+        newPlan.interestRate = interest;
+        await newPlan.save();
+      }
 
-    // log transaction
-    paystackReference = autoCharge.reference;
-    const newTranx = new Transaction();
-    newTranx.user = user;
-    newTranx.transactionStatus = paystackStatus;
-    newTranx.savings = 'FIXED-SAVINGS';
-    newTranx.paystackReference = paystackReference;
-    newTranx.transactionType = 'CREDIT';
-    newTranx.description = 'SAVE-NOW';
-    newTranx.amount = amount;
-    newTranx.save();
-
+      // log transaction
+      paystackReference = autoCharge.reference;
+      newTranx = new Transaction();
+      newTranx.user = user;
+      newTranx.transactionStatus = paystackStatus;
+      newTranx.savings = 'FIXED-SAVINGS';
+      newTranx.paystackReference = paystackReference;
+      newTranx.transactionType = 'CREDIT';
+      newTranx.description = 'SAVE-NOW';
+      newTranx.amount = amount;
+      newTranx.save();
+    } else throw new Error('Transaction failed');
     logger.trace(`${correlationID}: <<<< Exiting FixedSavingsService.${getFuncName()}`);
     const response = {};
     response.data = newTranx;
