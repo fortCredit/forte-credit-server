@@ -49,6 +49,7 @@ const TargetSavingsSchema = mongoose.Schema({
   interestRate: Number,
   totalSavingsTillDate: {
     type: Number,
+    default: 0,
   },
   savingsLength: {
     type: Number, // this is expected in days
