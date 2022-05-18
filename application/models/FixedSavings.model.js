@@ -46,6 +46,9 @@ const FixedSavingsSchema = mongoose.Schema({
   savingsLength: {
     type: Number, // this is expected in days
   },
+  daysLeft: {
+    type: Number, // days left to maturity date
+  },
   balanceWithROI: Number, // after investment has ended, this is totalInestment + ROI
   withdrawalBalance: Number, // withdrawable balance, will reduce with withdrawals
   savingStartDate: {

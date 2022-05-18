@@ -180,7 +180,7 @@ const topUp = async (planObj, correlationID) => {
 
         const totalSavings = updateSavings + amount;
 
-        const updateInterest = totalSavings * INTERESTRATES['TARGET-SAVINGS'];
+        const updateInterest = (amount * (INTERESTRATES['TARGET-SAVINGS'] / 360) * getTargetSavings.daysLeft);
 
         const result = await TargetSavings.findOneAndUpdate(
           { _id: targetSavingsID, user },

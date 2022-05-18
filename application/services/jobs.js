@@ -45,13 +45,19 @@ const runSavings = async (savings) => {
     } else {
       // Confirm this is not last transaction
       let next = 1;
+      let updateTargetInterest;
       if (plan.frequency === 'WEEKLY') next = 7;
       else if (plan.frequency === 'MONTHLY') next = 31;
       const today = new Date();
       const nextInv = today.setDate(today.getDate() + next);
-      const totalSavings = !plan.totalSavingsTillDate ? 0 : plan.totalSavingsTillDate;
-      const updateSavings = totalSavings + plan.amount;
-      const updateTargetInterest = (updateSavings * INTERESTRATES['TARGET-SAVINGS']);
+      const previousDate = today.setDate(today.getDate() - next);
+      // const totalSavings = !plan.totalSavingsTillDate ? 0 : plan.totalSavingsTillDate;
+      // const updateSavings = totalSavings + plan.amount;
+      if (previousDate) {
+        const totalSavings = !plan.totalSavingsTillDate ? 0 : plan.totalSavingsTillDate;
+        // const daysLeft = plan.daysLeft - 1;
+        updateTargetInterest = (totalSavings * (INTERESTRATES['TARGET-SAVINGS'] / 360));
+      }
 
       await TargetSavings.findOneAndUpdate({ _id: plan._id }, {
         nextSavingDate: nextInv,
@@ -96,21 +102,23 @@ const runFixedSavings = async (savings) => {
         nextSavingDate: next6hrs,
         toRetry: true,
       });
-      await FixedSavings.findOneAndUpdate({ _id: plan._id }, {
-        nextSavingDate: next6hrs,
-        toRetry: true,
-      });
       newTranx.toRetry = next6hrs;
     } else {
       // Confirm this is not last transaction
       let next = 1;
+      let updateFixedInterest;
       if (plan.frequency === 'WEEKLY') next = 7;
       else if (plan.frequency === 'MONTHLY') next = 31;
       const today = new Date();
       const nextInv = today.setDate(today.getDate() + next);
-      const totalSavings = !plan.totalSavingsTillDate ? 0 : plan.totalSavingsTillDate;
-      const updateSavings = totalSavings + plan.amount;
-      const updateFixedInterest = (updateSavings * INTERESTRATES['FIXED-SAVINGS']);
+      const previousDate = today.setDate(today.getDate() - next);
+      // const totalSavings = !plan.totalSavingsTillDate ? 0 : plan.totalSavingsTillDate;
+      // const updateSavings = totalSavings + plan.amount;
+      if (previousDate) {
+        const totalSavings = !plan.totalSavingsTillDate ? 0 : plan.totalSavingsTillDate;
+        // const daysLeft = plan.daysLeft - 1;
+        updateFixedInterest = (totalSavings * (INTERESTRATES['FIXED-SAVINGS'] / 360));
+      }
 
       await FixedSavings.findOneAndUpdate({ _id: plan._id }, {
         nextSavingDate: nextInv,
@@ -186,7 +194,7 @@ const handleFailure = async () => {
 
 exports.job = async () => {
   // this runs every 1 HR '0 */1 * * *'
-  schedule.schedule('*/5 * * * *', async () => {
+  schedule.schedule('*/1 * * * *', async () => {
     getDuePlans();
   });
   // this runs every 12am '0 0 * * *'
