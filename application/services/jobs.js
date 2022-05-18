@@ -194,7 +194,7 @@ const handleFailure = async () => {
 
 exports.job = async () => {
   // this runs every 1 HR '0 */1 * * *'
-  schedule.schedule('*/1 * * * *', async () => {
+  schedule.schedule('*/50 * * * *', async () => {
     getDuePlans();
   });
   // this runs every 12am '0 0 * * *'
