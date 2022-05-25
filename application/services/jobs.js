@@ -14,23 +14,26 @@ const runSavings = async (savings) => {
   savings.forEach(async (plan) => {
     let paystackStatus = '';
     let paystackReference = '';
+    let newTranx;
     // TODO: integrate paystack here
     const autoCharge = await chargeAuthorize(plan.card, plan.amount);
 
     if (autoCharge.status === 'success') {
       paystackStatus = 'COMPLETED';
+      paystackReference = autoCharge.reference;
+
+      newTranx = new Transaction();
+      newTranx.user = plan.user;
+      newTranx.transactionStatus = paystackStatus;
+      newTranx.savingsID = plan._id;
+      newTranx.savings = 'TARGET-SAVINGS';
+      newTranx.paystackReference = paystackReference;
+      newTranx.transactionType = 'CREDIT';
+      newTranx.description = 'AUTO-SAVE';
+      newTranx.amount = plan.amount;
     } else paystackStatus = 'FAILED';
     // log transaction
-    paystackReference = autoCharge.reference;
-    const newTranx = new Transaction();
-    newTranx.user = plan.user;
-    newTranx.transactionStatus = paystackStatus;
-    newTranx.savingsID = plan._id;
-    newTranx.savings = 'TARGET-SAVINGS';
-    newTranx.paystackReference = paystackReference;
-    newTranx.transactionType = 'CREDIT';
-    newTranx.description = 'AUTO-SAVE';
-    newTranx.amount = plan.amount;
+
     if (paystackStatus === 'FAILED') {
       // set next trial to next 6 hrs
       newTranx.failedDueTo = autoCharge.gateway_response;
@@ -75,23 +78,25 @@ const runFixedSavings = async (savings) => {
   savings.forEach(async (plan) => {
     let paystackStatus = '';
     let paystackReference = '';
+    let newTranx;
     // TODO: integrate paystack here
     const autoCharge = await chargeAuthorize(plan.card, plan.amount);
 
     if (autoCharge.status === 'success') {
       paystackStatus = 'COMPLETED';
+      // log transaction
+      paystackReference = autoCharge.reference;
+      newTranx = new Transaction();
+      newTranx.user = plan.user;
+      newTranx.transactionStatus = paystackStatus;
+      newTranx.savingsID = plan._id;
+      newTranx.savings = 'FIXED-SAVINGS';
+      newTranx.paystackReference = paystackReference;
+      newTranx.transactionType = 'CREDIT';
+      newTranx.description = 'AUTO-SAVE';
+      newTranx.amount = plan.amount;
     } else paystackStatus = 'FAILED';
-    // log transaction
-    paystackReference = autoCharge.reference;
-    const newTranx = new Transaction();
-    newTranx.user = plan.user;
-    newTranx.transactionStatus = paystackStatus;
-    newTranx.savingsID = plan._id;
-    newTranx.savings = 'FIXED-SAVINGS';
-    newTranx.paystackReference = paystackReference;
-    newTranx.transactionType = 'CREDIT';
-    newTranx.description = 'AUTO-SAVE';
-    newTranx.amount = plan.amount;
+
     if (paystackStatus === 'FAILED') {
       // set next trial to next 6 hrs
       newTranx.failedDueTo = autoCharge.gateway_response;
@@ -194,7 +199,7 @@ const handleFailure = async () => {
 
 exports.job = async () => {
   // this runs every 1 HR '0 */1 * * *'
-  schedule.schedule('*/50 * * * *', async () => {
+  schedule.schedule('*/1 * * * *', async () => {
     getDuePlans();
   });
   // this runs every 12am '0 0 * * *'
