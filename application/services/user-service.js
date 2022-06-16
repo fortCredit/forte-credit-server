@@ -56,7 +56,7 @@ exports.register = async (userOBJ, correlationID) => {
   logger.trace(`${correlationID}: Building mail object for mailer service`);
   logger.trace(`${correlationID}: >>>> Call to mailer service`);
   const recipient = userOBJ.email.trim();
-  const emailSubject = 'Hello, From Fortvest'; // email subject
+  const emailSubject = 'Hello, From MyFortvest'; // email subject
   const emailBody = await ejs.renderFile(
     path.resolve(process.cwd(), 'application/views/register.ejs'),
     { fullName: userOBJ.fullname, token: verifyToken },
@@ -100,7 +100,7 @@ exports.requestValidationToken = async (email, host, correlationID) => {
   logger.trace(`${correlationID}: Building mail object for mailer service`);
   logger.trace(`${correlationID}: >>>> Call to mailer service`);
   const recipient = getUser.email.trim();
-  const emailSubject = 'Hello, From Fortvest'; // email subject
+  const emailSubject = 'Hello, From MyFortvest'; // email subject
   const emailBody = await ejs.renderFile(
     path.resolve(process.cwd(), 'application/views/verifyacct.ejs'),
     { fullName: getUser.fullname, token: verifyToken },
