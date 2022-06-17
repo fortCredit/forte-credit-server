@@ -7,7 +7,7 @@ const mg = mailgun({ apiKey: process.env.MAIL_GUN_APIKEY, domain: DOMAIN });
 exports.sendMail = (mailObj) => {
   const { subject, body } = mailObj.data;
   const data = {
-    from: 'Joe  <mail@forvest.ng>', // sender address
+    from: 'MyFortvest  <mail@forvest.ng>', // sender address
     to: mailObj.recipient,
     subject,
     html: body,
