@@ -117,7 +117,7 @@ exports.requestValidationToken = async (email, host, correlationID) => {
   logger.trace(`${correlationID}: <<<< Exiting userManagementService.register()`);
   const response = {};
   response.data = {};
-  response.message = 'Account verification requested';
+  response.message = 'OTP Verification Sent';
   response.success = true;
   return response;
 };
@@ -139,13 +139,17 @@ exports.validateAccount = async (token) => {
   return response;
 };
 
-exports.login = async function (loginCred, correlationID) {
+exports.login = async function (res, loginCred, correlationID) {
   logger.trace(`${correlationID}: Querying db for user with ${loginCred.email}`);
   const user = await User.findOne({ email: loginCred.email });
   if (!user) {
     throw new InvalidCredentialsError(`User with email: ${loginCred.email} does not exist`);
   }
-  if (!user.isVerified) throw new Error('User is not validated yet, kindly check your email.');
+  if (!user.isVerified) {
+    res.status(200).json({
+      message: 'User is not validated yet, kindly check your email.',
+    });
+  }
   const isMatch = await bcrypt.compare(loginCred.password, user.password);
   if (!isMatch) {
     throw new InvalidCredentialsError('Password mismatch');
