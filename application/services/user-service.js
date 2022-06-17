@@ -3,7 +3,6 @@
 const bcrypt = require('bcryptjs');
 const ejs = require('ejs');
 const path = require('path');
-const { NotFoundError } = require('iyasunday');
 const User = require('../models/User.model');
 const Token = require('../models/RegToken.model');
 const ResetPassword = require('../models/PasswordResets.model');
@@ -147,7 +146,7 @@ exports.login = async function (loginCred, correlationID) {
   if (!user) {
     throw new InvalidCredentialsError(`User with email: ${loginCred.email} does not exist`);
   }
-  if (!user.isVerified) return { NotFoundError, data: user.isVerified, message: 'User is not validated yet, kindly check your email.' };
+  if (!user.isVerified) return { UserAlreadyExistsError, data: user.isVerified, message: 'User is not validated yet, kindly check your email.' };
   const isMatch = await bcrypt.compare(loginCred.password, user.password);
   if (!isMatch) {
     throw new InvalidCredentialsError('Password mismatch');
