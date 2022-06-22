@@ -40,7 +40,7 @@ module.exports = {
   RETRYFREQ: 6,
   INTERESTRATES: {
     'HIGH-YIELD': 0.12,
-    'FIXED-SAVINGS': 0.10,
-    'TARGET-SAVINGS': 0.05,
+    'FIXED-SAVINGS': 0.12,
+    'TARGET-SAVINGS': 0.10,
   },
 };
