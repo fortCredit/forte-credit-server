@@ -10,6 +10,7 @@ const targetSavingsRoute = require('./routes/targetSavings.route');
 const fixedSavingsRoute = require('./routes/fixedSavings.route');
 const transactionRoutes = require('./routes/transaction.route');
 const cardRoutes = require('./routes/card.route');
+const admin = require('./routes/superadmin.route');
 const logger = require('./utils/logger');
 const correlationIDMidware = require('./middleware/correlation-id-middleware');
 const apiAccessAuthMiddleware = require('./middleware/api-access-auth');
@@ -57,6 +58,7 @@ app.get('/healthcheck', async (req, res) => {
 });
 
 app.use('/v1/user', userRoute);
+app.use('/v1/admin', admin);
 app.use('/v1/targetsavings', targetSavingsRoute);
 app.use('/v1/fixedsavings', fixedSavingsRoute);
 app.use('/v1/transaction', transactionRoutes);
