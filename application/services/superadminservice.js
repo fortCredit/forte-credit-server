@@ -43,7 +43,7 @@ exports.login = async function (loginCred, correlationID) {
   logger.trace(`${correlationID}: Querying db for user with ${loginCred.email}`);
   const user = await User.findOne({ email: loginCred.email });
   if (!user) {
-    throw new InvalidCredentialsError(`${loginCred.role} with email: ${loginCred.email} does not exist`);
+    throw new InvalidCredentialsError(`Admin with email: ${loginCred.email} does not exist`);
   }
   const isMatch = await bcrypt.compare(loginCred.password, user.password);
 
