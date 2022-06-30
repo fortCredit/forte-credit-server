@@ -36,7 +36,7 @@ const runSavings = async (savings) => {
 
     if (paystackStatus === 'FAILED') {
       // set next trial to next 6 hrs
-      newTranx.failedDueTo = autoCharge.gateway_response;
+      newTranx.failedDueTo = autoCharge.gateway_response || 'Error from gateway';
       const d = new Date();
       logger.trace(`<<<< Transaction failed retry in ${RETRYFREQ} hrs`);
       const next6hrs = d.setTime(d.getTime() + (RETRYFREQ * 60 * 60 * 1000));
