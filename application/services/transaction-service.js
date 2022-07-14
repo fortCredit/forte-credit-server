@@ -10,6 +10,10 @@ function getFuncName() {
   return getFuncName.caller.name;
 }
 
+// const {
+//   InvalidCredentialsError,
+// } = require('../error-handler/index');
+
 exports.verifyBVN = async (reqBody, correlationID) => {
   try {
     logger.trace(
@@ -302,15 +306,18 @@ exports.chargeAuthorize = async (card, amount, correlationID) => {
             'post',
           )
         ).data;
-        return paystackVerifyResponse.data;
+        if (paystackVerifyResponse) {
+          return paystackVerifyResponse.data;
+        }
+        logger.trace(`${correlationID}: <<<<< No amount charged`);
       }
+      // return false;
     }
     return false;
   } catch (err) {
     throw new Error(err.message);
   }
 };
-
 exports.verifyAccountNumber = async (accountObj, correlationID) => {
   try {
     logger.trace(
