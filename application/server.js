@@ -69,6 +69,6 @@ app.listen(config.PORT, () => {
   const server = process.env.SERVER || 'LOCAL';
   // Connect Database
   connectDB(() => {
-    if (server === 'LOCAL' || server === 'AWS') job();
+    if (server === 'LOCAL' || server === 'HEROKU') job();
   });
 });
