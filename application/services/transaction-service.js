@@ -277,6 +277,7 @@ exports.verifyTransaction = async (reqObj, correlationID) => {
 //   }
 // };
 
+// eslint-disable-next-line consistent-return
 exports.chargeAuthorize = async (card, amount, correlationID) => {
   try {
     logger.trace(
@@ -315,9 +316,11 @@ exports.chargeAuthorize = async (card, amount, correlationID) => {
     }
     return false;
   } catch (err) {
-    throw new Error(err.message);
+    // throw new Error(err.message);
+    logger.trace(`${err.message}: <<<<< No amount charged`);
   }
 };
+
 exports.verifyAccountNumber = async (accountObj, correlationID) => {
   try {
     logger.trace(
