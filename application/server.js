@@ -14,7 +14,7 @@ const admin = require('./routes/superadmin.route');
 const logger = require('./utils/logger');
 const correlationIDMidware = require('./middleware/correlation-id-middleware');
 const apiAccessAuthMiddleware = require('./middleware/api-access-auth');
-const { job } = require('./services/jobs');
+// const { job } = require('./services/jobs');
 
 const app = express();
 const origin = '*';
@@ -69,6 +69,6 @@ app.listen(config.PORT, () => {
   const server = process.env.SERVER || 'LOCAL';
   // Connect Database
   connectDB(() => {
-    if (server === 'LOCAL' || server === 'HEROKU') job();
+    if (server === 'LOCAL' || server === 'HEROKU');
   });
 });
