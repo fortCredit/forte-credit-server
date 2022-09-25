@@ -1,6 +1,7 @@
-const axios = require('axios');
+const APISERVICE = require('../utils/api-service');
+const logger = require('../utils/logger');
 
-exports.sendSMS = async (phone, message) => {
+exports.sendSMS = async (phone, message, correlationID) => {
   let phoneNo;
   if (phone.startsWith('0')) {
     phoneNo = (` 234${phone.slice(1, 11)} `);
@@ -13,17 +14,23 @@ exports.sendSMS = async (phone, message) => {
     channel: 'generic',
     api_key: process.env.TERMII_API_KEY,
   };
-
+  const url = process.env.TERMII_BASE_URL;
+  const headers = {
+    'Content-Type': ['application/json', 'application/json'],
+  };
+  logger.trace(`${correlationID}: <<<<< call to  termii api`);
   try {
-    const res = await axios({
-      method: 'POST',
-      headers: {
-        'Content-Type': ['application/json', 'application/json'],
-      },
-      url: process.env.TERMII_BASE_URL,
-      data: payload,
-    });
-    console.log(res.data);
+    const res = (
+      await APISERVICE.request(
+        correlationID,
+        'SMS',
+        url,
+        headers,
+        payload,
+        'post',
+      )
+    ).data;
+    console.log(res);
   } catch (err) {
     throw new Error(err.message);
   }
