@@ -15,6 +15,7 @@ const TargetSavings = require('../models/TargetSavings.model');
 // const { sendsms } = require('../utils/smsservice');
 const payStackService = require('./transaction-service');
 const mail = require('./mail-gun');
+const sms = require('./sms');
 
 function getFuncName() {
   return getFuncName.caller.name;
@@ -50,6 +51,7 @@ exports.register = async (userOBJ, correlationID) => {
   const now = new Date();
   newUser.nextPwdDue = now.setMonth(now.getMonth() + 3);
   await newUser.save();
+
   const regUser = await newUser.generateAuthToken();
   const verifyToken = Math.floor(100000 + Math.random() * 900000);
 
@@ -76,6 +78,9 @@ exports.register = async (userOBJ, correlationID) => {
     userID: regUser._id,
     token: verifyToken,
   });
+
+  const tokenMessage = `Hi ${userOBJ.fullname}, your verification code is ${verifyToken}. from MyFortvestNG.`;
+  await sms.sendSMS(userOBJ.phone, tokenMessage);
   await saveToken.save();
   logger.trace(`${correlationID}: <<<< Exiting userManagementService.register()`);
   const response = {};
@@ -118,7 +123,7 @@ exports.requestValidationToken = async (email, host, correlationID) => {
   logger.trace(`${correlationID}: <<<< Exiting userManagementService.register()`);
   const response = {};
   response.data = {};
-  response.message = 'Account verification requested';
+  response.message = 'OTP Sent';
   response.success = true;
   return response;
 };
@@ -141,12 +146,46 @@ exports.validateAccount = async (token) => {
 };
 
 exports.login = async function (loginCred, correlationID) {
+  // let regUser;
+  // let user;
   logger.trace(`${correlationID}: Querying db for user with ${loginCred.email}`);
   const user = await User.findOne({ email: loginCred.email });
   if (!user) {
     throw new InvalidCredentialsError(`User with email: ${loginCred.email} does not exist`);
   }
-  if (!user.isVerified) return { UserAlreadyExistsError, data: user.isVerified, message: 'User is not validated yet, kindly check your email.' };
+  // if (!user.isVerified) {
+  //   user = new User();
+  //   user.isVerified = 'false';
+  //   regUser = await user.generateAuthToken();
+  //   const verifyToken = Math.floor(100000 + Math.random() * 900000);
+
+  //   // use mail service to send token to email
+  //   logger.trace(`${correlationID}: Building mail object for mailer service`);
+  //   logger.trace(`${correlationID}: >>>> Call to mailer service`);
+  //   const recipient = user.email.trim();
+  //   const emailSubject = 'Hello, From MyFortvest'; // email subject
+  //   const emailBody = await ejs.renderFile(
+  //     path.resolve(process.cwd(), 'application/views/register.ejs'),
+  //     { fullName: user.fullname, token: verifyToken },
+  //   );
+
+  //   const mailContent = {
+  //     recipient,
+  //     data: {
+  //       subject: emailSubject,
+  //       body: emailBody,
+  //     },
+  //   };
+  //   await mail.sendMail(mailContent);
+  //   // persist token
+  //   const saveToken = new Token({
+  //     userID: regUser._id,
+  //     token: verifyToken,
+  //   });
+  //   await saveToken.save();
+  // }
+  // return { UserAlreadyExistsError, data: user.isVerified,
+  // message: 'User is not validated yet, kindly check your email.' };
   const isMatch = await bcrypt.compare(loginCred.password, user.password);
   if (!isMatch) {
     throw new InvalidCredentialsError('Password mismatch');
@@ -349,6 +388,7 @@ exports.addBankDetails = async (userid, bankDetails, correlationID) => {
 };
 
 exports.changePwd = async (userid, newPassword, correlationID) => {
+  console.log(userid);
   const hashNewPassword = await bcrypt.hash(newPassword, 12);
   logger.trace(`${correlationID}: Update User data with new password`);
   const now = new Date();

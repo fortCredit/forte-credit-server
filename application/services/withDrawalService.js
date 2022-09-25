@@ -217,6 +217,7 @@ const verifyWithdrawal = async (transactionID, correlationID) => {
   let message = 'Withdrawal Pending';
   const verifyRes = await
   verifyTransfer(getTransaction.withDrawalReceipt.transferCode, correlationID);
+  console.log(verifyRes);
   if (verifyRes.status === 'success') {
     getTransaction.status = 'COMPLETED';
     getTransaction.save();

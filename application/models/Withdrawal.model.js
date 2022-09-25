@@ -3,7 +3,7 @@
 /* eslint-disable no-underscore-dangle */
 const mongoose = require('mongoose');
 const {
-  FORTVESTPLANS, INVESTMENTSTATUS,
+  SAVINGSSTATUS,
 } = require('../config');
 
 const { Schema } = mongoose;
@@ -17,10 +17,6 @@ const WithdrawalSchema = mongoose.Schema({
     ref: 'user',
     required: true,
   },
-  planType: {
-    type: String,
-    enum: FORTVESTPLANS,
-  },
   amount: {
     type: Number,
   },
@@ -28,13 +24,17 @@ const WithdrawalSchema = mongoose.Schema({
     type: String,
     required: true,
   },
-  investmentID: String,
+  savingsID: String,
   bankName: String,
   balance: Number,
+  savingType: {
+    type: String,
+    enum: ['TARGET-SAVINGS', 'FIXED-SAVINGS'],
+  },
   status: {
     type: String,
     uppercase: true,
-    enum: INVESTMENTSTATUS,
+    enum: SAVINGSSTATUS,
     default: 'ACTIVE',
   },
   deleted: {

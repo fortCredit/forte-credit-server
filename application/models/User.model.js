@@ -79,6 +79,11 @@ const UserSchema = mongoose.Schema({
     account_name: String,
   },
   authEmail: String,
+  role: {
+    type: String,
+    enum: ['USER', 'ADMIN', 'SUPERADMIN'],
+    default: 'USER',
+  },
   deleted: {
     type: Boolean,
     default: false,
@@ -107,4 +112,4 @@ UserSchema.methods.generateAuthToken = async function () {
     return console.log(err);
   }
 };
-module.exports = mongoose.model('user', UserSchema);
+module.exports = mongoose.model('User', UserSchema);
