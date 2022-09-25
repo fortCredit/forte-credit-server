@@ -14,14 +14,16 @@ exports.sendSMS = async (phone, message, correlationID) => {
     channel: 'generic',
     api_key: process.env.TERMII_API_KEY,
   };
+
   const url = process.env.TERMII_BASE_URL;
   const headers = {
     'Content-Type': ['application/json', 'application/json'],
   };
+
   logger.trace(`${correlationID}: <<<<< call to  termii api`);
   try {
     const res = (
-      await APISERVICE.request(
+      await APISERVICE.requestCustom(
         correlationID,
         'SMS',
         url,
