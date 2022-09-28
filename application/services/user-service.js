@@ -79,7 +79,7 @@ exports.register = async (userOBJ, correlationID) => {
     token: verifyToken,
   });
 
-  const tokenMessage = `Hi ${userOBJ.fullname}, your verification code is ${verifyToken}. from MyFortvestNG.`;
+  const tokenMessage = `Hi ${userOBJ.fullname}, your Myfortvest verification code is ${verifyToken}, one time use only.`;
   await sms.sendSMS(userOBJ.phone, tokenMessage);
   await saveToken.save();
   logger.trace(`${correlationID}: <<<< Exiting userManagementService.register()`);
