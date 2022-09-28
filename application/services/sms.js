@@ -11,7 +11,7 @@ exports.sendSMS = async (phone, message, correlationID) => {
     from: 'Myfortvest',
     sms: message,
     type: 'plain',
-    channel: 'generic',
+    channel: 'dnd',
     api_key: process.env.TERMII_API_KEY,
   };
 
