@@ -8,7 +8,7 @@ exports.sendSMS = async (phone, message, correlationID) => {
   }
   const payload = {
     to: phoneNo,
-    from: 'Myfortvest',
+    from: 'N-Alert',
     sms: message,
     type: 'plain',
     channel: 'dnd',
