@@ -15,7 +15,7 @@ const TargetSavings = require('../models/TargetSavings.model');
 // const { sendsms } = require('../utils/smsservice');
 const payStackService = require('./transaction-service');
 const mail = require('./mail-gun');
-const sms = require('./sms');
+// const sms = require('./sms');
 
 function getFuncName() {
   return getFuncName.caller.name;
@@ -79,8 +79,9 @@ exports.register = async (userOBJ, correlationID) => {
     token: verifyToken,
   });
 
-  const tokenMessage = `Hi ${userOBJ.fullname}, your Myfortvest verification code is ${verifyToken}, one time use only.`;
-  await sms.sendSMS(userOBJ.phone, tokenMessage);
+  // const tokenMessage = `Hi ${userOBJ.fullname},
+  // your Myfortvest verification code is ${verifyToken}, one time use only.`;
+  // await sms.sendSMS(userOBJ.phone, tokenMessage);
   await saveToken.save();
   logger.trace(`${correlationID}: <<<< Exiting userManagementService.register()`);
   const response = {};
