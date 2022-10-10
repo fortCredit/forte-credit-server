@@ -8,20 +8,20 @@ const {
   FORTVESTFREQ, SAVINGSSTATUS,
 } = require('../config');
 
-const { Schema } = mongoose;
+// const { Schema } = mongoose;
 
 const autoIncrementModelID = require('./Counter.model');
 
 const TargetSavingsSchema = mongoose.Schema({
   savingsID: String,
   user: {
-    type: Schema.Types.ObjectId,
-    ref: 'user',
+    type: mongoose.Schema.ObjectId,
+    ref: 'User',
     required: true,
   },
 
   card: {
-    type: Schema.Types.ObjectId,
+    type: mongoose.Schema.Types.ObjectId,
     ref: 'card',
     required: true,
   },
@@ -96,4 +96,4 @@ TargetSavingsSchema.pre('save', function (next) {
   }
   autoIncrementModelID('applicationCount', 'savingsID', this, next, 'TRSV');
 });
-module.exports = mongoose.model('target-savings', TargetSavingsSchema);
+module.exports = mongoose.model('Target-savings', TargetSavingsSchema);

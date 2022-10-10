@@ -32,7 +32,7 @@ exports.sendSMS = async (phone, message, correlationID) => {
         'post',
       )
     ).data;
-    console.log(res);
+    return res;
   } catch (err) {
     throw new Error(err.message);
   }
