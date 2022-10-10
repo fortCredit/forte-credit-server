@@ -158,6 +158,7 @@ const topUp = async (planObj, correlationID) => {
     const getTargetSavings = await TargetSavings.findOne(
       { _id: targetSavingsID, user },
     );
+    console.log(getTargetSavings);
     if (!getTargetSavings) throw new Error('Selct the right target saving ID');
     if (getTargetSavings.totalSavingsTillDate === getTargetSavings.targetAmount) {
       await TargetSavings.findOneAndUpdate(
