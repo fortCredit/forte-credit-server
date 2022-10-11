@@ -302,18 +302,23 @@ exports.chargeAuthorize = async (card, amount, correlationID) => {
         body.email = getCard.authEmail;
         body.amount = amount;
         console.log('TEST-6-HERE');
-        const paystackVerifyResponse = (
-          await axios({
+        let paystackVerifyResponse;
+        try {
+          paystackVerifyResponse = await axios({
             method: 'POST',
             headers,
             url,
             data: body,
-          })
-        ).data;
-        console.log('TEST-1-HERE');
-        if (paystackVerifyResponse) {
-          return paystackVerifyResponse.data;
+          });
+          console.log(paystackVerifyResponse);
+        } catch (err) {
+          console.log(err);
         }
+
+        console.log('TEST-1-HERE');
+        // if (paystackVerifyResponse) {
+        //   return paystackVerifyResponse.data;
+        // }
         logger.trace(`${correlationID}: <<<<< No amount charged`);
       }
       // return false;
