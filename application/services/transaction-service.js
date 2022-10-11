@@ -307,6 +307,7 @@ exports.chargeAuthorize = async (card, amount, correlationID) => {
             'post',
           )
         ).data;
+        console.log('TEST-1-HERE');
         if (paystackVerifyResponse) {
           return paystackVerifyResponse.data;
         }
