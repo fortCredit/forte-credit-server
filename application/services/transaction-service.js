@@ -293,12 +293,14 @@ exports.chargeAuthorize = async (card, amount, correlationID) => {
     console.log('TEST-5-HERE');
     logger.trace(`${correlationID}: <<<<< call to  paystack api`);
     const getCard = await Card.findOne({ _id: card });
+    console.log(getCard);
     if (getCard) {
       if (getCard.authorization) {
         const body = {};
         body.authorization_code = getCard.authorization.authorization_code;
         body.email = getCard.authEmail;
         body.amount = amount;
+        console.log('TEST-6-HERE');
         const paystackVerifyResponse = (
           await APISERVICE.requestCustom(
             correlationID,
