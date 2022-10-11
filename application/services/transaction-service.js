@@ -1,3 +1,4 @@
+const axios = require('axios');
 const APISERVICE = require('../utils/api-service');
 const logger = require('../utils/logger');
 const Transaction = require('../models/Transaction.model');
@@ -302,14 +303,12 @@ exports.chargeAuthorize = async (card, amount, correlationID) => {
         body.amount = amount;
         console.log('TEST-6-HERE');
         const paystackVerifyResponse = (
-          await APISERVICE.requestCustom(
-            correlationID,
-            'PAYSTACK',
-            url,
+          await axios({
+            method: 'POST',
             headers,
-            body,
-            'post',
-          )
+            url,
+            data: body,
+          })
         ).data;
         console.log('TEST-1-HERE');
         if (paystackVerifyResponse) {
