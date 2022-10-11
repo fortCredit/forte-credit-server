@@ -283,12 +283,14 @@ exports.chargeAuthorize = async (card, amount, correlationID) => {
     logger.trace(
       `${correlationID}: >>>> Entering transactionCordService.chargeAuthorize()`,
     );
+    console.log('TEST-4-HERE');
     // set pay stack request options
     const url = 'https://api.paystack.co/transaction/charge_authorization';
     const headers = {
       authorization: `Bearer ${process.env.PAYSTACK_SECRET}`,
       'cache-control': 'no-cache',
     };
+    console.log('TEST-5-HERE');
     logger.trace(`${correlationID}: <<<<< call to  paystack api`);
     const getCard = await Card.findOne({ _id: card });
     if (getCard) {
