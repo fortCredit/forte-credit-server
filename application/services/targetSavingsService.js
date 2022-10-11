@@ -148,19 +148,17 @@ const listTargetSavings = async (user, pageOpt, correlationID) => {
 const topUp = async (planObj, correlationID) => {
   logger.trace(`${correlationID}: <<<< Entering TargetSavingsService.${getFuncName()}`);
   try {
-    console.log('Testing 1');
     const {
       user, amount, card, targetSavingsID,
     } = planObj;
     const getCard = await Card.findOne({ _id: card, user });
     if (!getCard) throw new Error('No Card Found, Kindly Add a Card');
 
-    console.log('Testing 2');
     // const reqBody = { email: getUser.email, amount, authorizationId };
     const getTargetSavings = await TargetSavings.findOne(
       { _id: targetSavingsID, user },
     );
-    console.log(getTargetSavings);
+
     if (!getTargetSavings) throw new Error('Selct the right target saving ID');
     if (getTargetSavings.totalSavingsTillDate === getTargetSavings.targetAmount) {
       await TargetSavings.findOneAndUpdate(
@@ -172,7 +170,6 @@ const topUp = async (planObj, correlationID) => {
       let paystackReference = '';
       let newTranx = {};
 
-      console.log('Testing 3');
       const autoCharge = await chargeAuthorize(getCard._id, amount);
       if (autoCharge.status === 'success') {
         paystackStatus = 'SUCCESSFUL';
@@ -186,13 +183,11 @@ const topUp = async (planObj, correlationID) => {
 
         const updateInterest = (amount * (INTERESTRATES['TARGET-SAVINGS'] / 360) * getTargetSavings.daysLeft);
 
-        console.log('Testing 4');
         const result = await TargetSavings.findOneAndUpdate(
           { _id: targetSavingsID, user },
           { totalSavingsTillDate: totalSavings, interestRate: updateInterest },
         );
 
-        console.log('Testing 5');
         if (!result) throw new Error('Kindly Select a Target Savings to Top-Up');
         // log transaction
         paystackReference = autoCharge.reference;

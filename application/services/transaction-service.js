@@ -1,4 +1,3 @@
-const axios = require('axios');
 const APISERVICE = require('../utils/api-service');
 const logger = require('../utils/logger');
 const Transaction = require('../models/Transaction.model');
@@ -284,41 +283,38 @@ exports.chargeAuthorize = async (card, amount, correlationID) => {
     logger.trace(
       `${correlationID}: >>>> Entering transactionCordService.chargeAuthorize()`,
     );
-    console.log('TEST-4-HERE');
+
     // set pay stack request options
     const url = 'https://api.paystack.co/transaction/charge_authorization';
     const headers = {
       authorization: `Bearer ${process.env.PAYSTACK_SECRET}`,
       'cache-control': 'no-cache',
     };
-    console.log('TEST-5-HERE');
+
     logger.trace(`${correlationID}: <<<<< call to  paystack api`);
     const getCard = await Card.findOne({ _id: card });
-    console.log(getCard);
+
     if (getCard) {
       if (getCard.authorization) {
         const body = {};
         body.authorization_code = getCard.authorization.authorization_code;
         body.email = getCard.authEmail;
         body.amount = amount;
-        console.log('TEST-6-HERE');
-        let paystackVerifyResponse;
-        try {
-          paystackVerifyResponse = await axios({
-            method: 'POST',
-            headers,
-            url,
-            data: body,
-          });
-          console.log(paystackVerifyResponse);
-        } catch (err) {
-          console.log(err);
-        }
 
-        console.log('TEST-1-HERE');
-        // if (paystackVerifyResponse) {
-        //   return paystackVerifyResponse.data;
-        // }
+        const paystackVerifyResponse = (
+          await APISERVICE.requestCustom(
+            correlationID,
+            'PAYSTACK',
+            url,
+            headers,
+            body,
+            'post',
+          )
+        ).data;
+
+        if (paystackVerifyResponse) {
+          return paystackVerifyResponse.data;
+        }
         logger.trace(`${correlationID}: <<<<< No amount charged`);
       }
       // return false;
