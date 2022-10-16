@@ -455,7 +455,7 @@ exports.verifyTransfer = async (transfercode, correlationID) => {
     ).data;
     if (!verifyResponse) { throw new Error('An error occured creating transfer receipt'); }
     if (!verifyResponse.status) { throw new Error('Transfer receipt creation failed'); }
-    return verifyResponse.data;
+    return verifyResponse;
   } catch (err) {
     throw new Error(err.message);
   }

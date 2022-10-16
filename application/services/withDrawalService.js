@@ -217,7 +217,7 @@ const verifyWithdrawal = async (transactionID, correlationID) => {
   let message = 'Withdrawal Pending';
   const verifyRes = await
   verifyTransfer(getTransaction.withDrawalReceipt.transferCode, correlationID);
-  console.log(verifyRes);
+  // console.log(verifyRes);
   if (verifyRes.status === 'success') {
     getTransaction.status = 'COMPLETED';
     getTransaction.save();
@@ -230,6 +230,7 @@ const verifyWithdrawal = async (transactionID, correlationID) => {
   response.success = true;
   return response;
 };
+
 module.exports = {
   initializeTargetWithdrawal,
   initializeFixedWithdrawal,
