@@ -116,9 +116,20 @@ exports.createAdmin = async (userOBJ, correlationID) => {
   return response;
 };
 
-exports.getUsers = async (correlationID) => {
+exports.getVerifiedUsers = async (correlationID) => {
   // confirm user does not exist
-  const findUser = await User.find().select('fullname email phone isVerified ');
+  const findUser = await User.find({ isVerified: 'true' }).select('fullname email phone isVerified ');
+  logger.trace(`${correlationID}: <<<< Exiting userManagementService.getUser()`);
+  const response = {};
+  response.data = findUser;
+  response.message = 'Users retrieved successfully';
+  response.success = true;
+  return response;
+};
+
+exports.getNonVerifiedUsers = async (correlationID) => {
+  // confirm user does not exist
+  const findUser = await User.find({ isVerified: 'false' }).select('fullname email phone isVerified ');
   logger.trace(`${correlationID}: <<<< Exiting userManagementService.getUser()`);
   const response = {};
   response.data = findUser;

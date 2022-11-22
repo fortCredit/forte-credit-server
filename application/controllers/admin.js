@@ -198,7 +198,7 @@ exports.createAdmin = async (req, res) => {
   }
 };
 
-exports.getUsers = async function (req, res) {
+exports.getVerifiedUsers = async function (req, res) {
   const correlationID = req.header('x-correlation-id');
   if (req.body) {
     try {
@@ -206,7 +206,36 @@ exports.getUsers = async function (req, res) {
       logger.trace(`${correlationID}: Validation successful`);
       logger.trace(`${correlationID}: >>>> Call to userManagementService.getUSers()`);
       const serviceResponse = await
-      adminManagementService.getUsers(correlationID);
+      adminManagementService.getVerifiedUsers(correlationID);
+      return res.json(response.success(serviceResponse.data, serviceResponse.message));
+    } catch (err) {
+      logger.trace(`${correlationID}: ${err}`);
+      const error = {};
+      let message = '';
+      err.data ? error.data = err.data : error.data = {};
+      err.name ? error.name = err.name : error.name = 'UnknownError';
+      err.message ? message = err.message : message = 'Something Failed';
+      return res.json(response.error(error, message));
+    }
+  } else {
+    const error = {
+      title: 'Bad Request',
+      detail: 'Kindly check the documentation for this API',
+    };
+    const message = 'Failed, Bad Request';
+    return res.json(response.error(error, message));
+  }
+};
+
+exports.getNonVerifiedUsers = async function (req, res) {
+  const correlationID = req.header('x-correlation-id');
+  if (req.body) {
+    try {
+      logger.trace(`${correlationID}: <<<<<<--Started get user flow-->>>>>>`);
+      logger.trace(`${correlationID}: Validation successful`);
+      logger.trace(`${correlationID}: >>>> Call to userManagementService.getUSers()`);
+      const serviceResponse = await
+      adminManagementService.getNonVerifiedUsers(correlationID);
       return res.json(response.success(serviceResponse.data, serviceResponse.message));
     } catch (err) {
       logger.trace(`${correlationID}: ${err}`);
