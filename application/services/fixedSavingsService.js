@@ -35,7 +35,7 @@ const createFixedSavings = async (savingObj, correlationID) => {
       logger.error(`${correlationID}: <<<< Savings not found`);
       throw new Error('Savings not found');
     }
-  } else {
+  } else if (amount >= 5000000) {
     autosave = new FixedSavings(savingObj);
     autosave.frequency = frequency;
     autosave.amount = amount;
@@ -45,7 +45,7 @@ const createFixedSavings = async (savingObj, correlationID) => {
     const savingsEndDate = startDate.setDate(startDate.getDate() + (savingsLength));
     autosave.startDate = savingsEndDate;
     await autosave.save();
-  }
+  } else throw new Error('Minimum amount to save must be up to 50,000 Naira');
   // TODO: Perform card transaction to activate card for recurring transaction
   logger.trace(`${correlationID}: <<<< Exiting fortVestService.${getFuncName()}`);
   const response = {};
@@ -176,7 +176,6 @@ const totalSavings = async (userID, correlationID) => {
   logger.trace(`${correlationID}: <<<< Entering FixedSavingsService.${getFuncName()}`);
   try {
     const getTotalSavings = await FixedSavings.findOne({ user: userID });
-    // console.log(getTotalSavings);
     let outputObj;
     if (!getTotalSavings.totalSavingsTillDate) {
       outputObj = 0;
@@ -216,33 +215,23 @@ const saveNow = async (planObj, correlationID) => {
 
     if (paystackStatus === 'SUCCESSFUL') {
       const getTotalSavings = await FixedSavings.findOne({ user });
-
       let updateSavings;
-      // let result;
-
       if (getTotalSavings) {
         const totalSaving = getTotalSavings.totalSavingsTillDate;
-        // if (totalSaving === null) {
-        //   updateSavings = 0 + amount;
-        //   result = await FixedSavings.findOne({ user });
-        //   result.totalSavingsTillDate = updateSavings;
-        //   result.save();
-        // } else {
         updateSavings = totalSaving + amount;
-        const updateInterest = ((INTERESTRATES['FIXED-SAVINGS'] / 12) / getTotalSavings.savingsLength) * updateSavings;
+        const updateInterest = ((INTERESTRATES['FIXED-SAVINGS'] / 365) * amount);
         await FixedSavings.findOneAndUpdate(
-          { user }, { totalSavingsTillDate: updateSavings, interestRate: updateInterest },
+          { user }, { totalSavingsTillDate: updateSavings, $inc: { interestRate: updateInterest } },
         );
       // }
       } else if (!getTotalSavings) {
-        const interest = (amount * INTERESTRATES['FIXED-SAVINGS']);
+        // const interest = (amount * INTERESTRATES['FIXED-SAVINGS']);
         const newPlan = new FixedSavings();
         newPlan.user = user;
         newPlan.isAutomated = 'INACTIVE';
         newPlan.amount = amount;
         newPlan.card = card;
         newPlan.totalSavingsTillDate = amount;
-        newPlan.interestRate = interest;
         await newPlan.save();
       }
 
