@@ -6,7 +6,7 @@ const Card = require('../models/Card.model');
 const Transaction = require('../models/Transaction.model');
 // const mailScheduler = require('../utils/mailer');
 const logger = require('../utils/logger');
-const { INTERESTRATES } = require('../config');
+// const { INTERESTRATES } = require('../config');
 const { chargeAuthorize } = require('./transaction-service');
 // const capitalizeFirstLetter = (string) => string[0].toUpperCase() + string.slice(1);
 function getFuncName() {
@@ -181,11 +181,12 @@ const topUp = async (planObj, correlationID) => {
 
         const totalSavings = updateSavings + amount;
 
-        const updateInterest = (amount * (INTERESTRATES['TARGET-SAVINGS'] / 360) * getTargetSavings.daysLeft);
+        // const updateInterest = (amount * (INTERESTRATES['TARGET-SAVINGS'] / 360)
+        // * getTargetSavings.daysLeft);
 
         const result = await TargetSavings.findOneAndUpdate(
           { _id: targetSavingsID, user },
-          { totalSavingsTillDate: totalSavings, interestRate: updateInterest },
+          { totalSavingsTillDate: totalSavings },
         );
 
         if (!result) throw new Error('Kindly Select a Target Savings to Top-Up');
