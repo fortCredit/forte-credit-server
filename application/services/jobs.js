@@ -53,20 +53,23 @@ const runSavings = async (savings) => {
       else if (plan.frequency === 'MONTHLY') next = 31;
       const today = new Date();
       const nextInv = today.setDate(today.getDate() + next);
-      const previousDate = today.setDate(today.getDate() - next);
-      // const totalSavings = !plan.totalSavingsTillDate ? 0 : plan.totalSavingsTillDate;
-      // const updateSavings = totalSavings + plan.amount;
-      if (previousDate) {
-        const totalSavings = !plan.totalSavingsTillDate ? 0 : plan.totalSavingsTillDate;
-        // const daysLeft = plan.daysLeft - 1;
-        updateTargetInterest = (totalSavings * (INTERESTRATES['TARGET-SAVINGS'] / 360));
-      }
+      // const previousDate = today.setDate(today.getDate() - next);
+      // const checkHour = (24 - today.getHours);
+      // console.log(checkHour);
+      // if (previousDate) {
+      //   const totalSavings = !plan.totalSavingsTillDate ? 0 : plan.totalSavingsTillDate;
+      //   // const daysLeft = plan.daysLeft - 1;
+      //   updateTargetInterest = ((INTERESTRATES['TARGET-SAVINGS'] / 360) * totalSavings);
+      // }
 
       await TargetSavings.findOneAndUpdate({ _id: plan._id }, {
         nextSavingDate: nextInv,
         interestRate: updateTargetInterest,
         toRetry: false,
-        $inc: { totalSavingsTillDate: plan.amount, daysLeft: -1 },
+        $inc: {
+          totalSavingsTillDate: plan.amount,
+          daysLeft: -1,
+        },
       });
       logger.trace('<<<< Transaction completed successfully');
     }
@@ -116,14 +119,14 @@ const runFixedSavings = async (savings) => {
       else if (plan.frequency === 'MONTHLY') next = 31;
       const today = new Date();
       const nextInv = today.setDate(today.getDate() + next);
-      const previousDate = today.setDate(today.getDate() - next);
+      // const previousDate = today.setDate(today.getDate() - next);
       // const totalSavings = !plan.totalSavingsTillDate ? 0 : plan.totalSavingsTillDate;
       // const updateSavings = totalSavings + plan.amount;
-      if (previousDate) {
-        const totalSavings = !plan.totalSavingsTillDate ? 0 : plan.totalSavingsTillDate;
-        // const daysLeft = plan.daysLeft - 1;
-        updateFixedInterest = (totalSavings * (INTERESTRATES['FIXED-SAVINGS'] / 360));
-      }
+      // if (previousDate) {
+      //   const totalSavings = !plan.totalSavingsTillDate ? 0 : plan.totalSavingsTillDate;
+      //   // const daysLeft = plan.daysLeft - 1;
+      //   updateFixedInterest = (totalSavings * (INTERESTRATES['FIXED-SAVINGS'] / 360));
+      // }
 
       await FixedSavings.findOneAndUpdate({ _id: plan._id }, {
         nextSavingDate: nextInv,
@@ -137,6 +140,50 @@ const runFixedSavings = async (savings) => {
   });
 };
 
+const checkTargetSavingsInterest = async (savings) => {
+  savings.forEach(async (plan) => {
+    // const next = 1;
+    let updateTargetInterest;
+    const today = new Date();
+    const next24Hrs = plan.nextSavingDate;
+    // const presentSave = plan.update
+    // const previousDate = today.setDate(today.getDate() - next);
+    if (next24Hrs > today) {
+      const totalSavings = !plan.totalSavingsTillDate ? 0 : plan.totalSavingsTillDate;
+      const totalSavedAmount = totalSavings + plan.withdrawalBalance;
+      updateTargetInterest = ((INTERESTRATES['TARGET-SAVINGS'] / 365) * totalSavedAmount);
+    } else console.log('could not process Interest');
+
+    await TargetSavings.findOneAndUpdate({ _id: plan._id }, {
+      interestRate: updateTargetInterest,
+      toRetry: false,
+    });
+    logger.trace('<<<< Interest completed successfully');
+  });
+};
+
+const checkFixedSavingsInterest = async (savings) => {
+  savings.forEach(async (plan) => {
+    // const next = 1;
+    let updateFixedInterest;
+    const today = new Date();
+    const next24Hrs = plan.nextSavingDate;
+    // const presentSave = plan.update
+    // const previousDate = today.setDate(today.getDate() - next);
+    if (next24Hrs > today) {
+      const totalSavings = !plan.totalSavingsTillDate ? 0 : plan.totalSavingsTillDate;
+      const totalSavedAmount = totalSavings + plan.withdrawalBalance;
+      updateFixedInterest = ((INTERESTRATES['FIXED-SAVINGS'] / 365) * totalSavedAmount);
+    } else console.log('could not process Interest');
+
+    await FixedSavings.findOneAndUpdate({ _id: plan._id }, {
+      interestRate: updateFixedInterest,
+      toRetry: false,
+    });
+    logger.trace('<<<< Interest completed successfully');
+  });
+};
+
 const getDuePlans = async () => {
   try {
     const d = new Date();
@@ -147,6 +194,30 @@ const getDuePlans = async () => {
     const dueFixedPlans = await FixedSavings.find({ nextSavingDate: { $gte: (day), $lt: (night) }, status: 'ACTIVE', isAutomated: 'ACTIVE' });
     await runSavings(duePlans);
     await runFixedSavings(dueFixedPlans);
+  } catch (err) {
+    logger.error(`<<<< Job failed due tols ${err}`);
+  }
+};
+
+const getTargetSavingsInterest = async () => {
+  try {
+    // const d = new Date();
+    // const day = d.setUTCHours(0, 0, 0, 0);
+    // const night = d.setUTCHours(23, 59, 59, 999);
+    const duePlans = await TargetSavings.find({ status: 'ACTIVE' });
+    await checkTargetSavingsInterest(duePlans);
+  } catch (err) {
+    logger.error(`<<<< Job failed due tols ${err}`);
+  }
+};
+
+const getFixedSavingsInterest = async () => {
+  try {
+    // const d = new Date();
+    // const day = d.setUTCHours(0, 0, 0, 0);
+    // const night = d.setUTCHours(23, 59, 59, 999);
+    const duePlans = await FixedSavings.find({ status: 'ACTIVE' });
+    await checkFixedSavingsInterest(duePlans);
   } catch (err) {
     logger.error(`<<<< Job failed due tols ${err}`);
   }
@@ -205,6 +276,13 @@ exports.job = async () => {
   // this runs every 12am '0 0 * * *'
   schedule.schedule('0 0 * * *', async () => {
     deactivateTargetPlans();
+  });
+  // rund every 24 hours
+  schedule.schedule('0 0 * * *', async () => {
+    getTargetSavingsInterest();
+  });
+  schedule.schedule('0 0 * * *', async () => {
+    getFixedSavingsInterest();
   });
   // this runs every 12am '0 0 * * *'
   schedule.schedule('0 0 * * *', async () => {
