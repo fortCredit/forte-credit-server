@@ -39,6 +39,7 @@ const FixedSavingsSchema = mongoose.Schema({
     type: Number,
   },
   interestRate: Number,
+
   totalSavingsTillDate: {
     type: Number,
     default: 0,
@@ -50,7 +51,10 @@ const FixedSavingsSchema = mongoose.Schema({
     type: Number, // days left to maturity date
   },
   balanceWithROI: Number, // after investment has ended, this is totalInestment + ROI
-  withdrawalBalance: Number, // withdrawable balance, will reduce with withdrawals
+  withdrawalBalance: {
+    type: Number, // withdrawable balance, will reduce with withdrawals
+    default: 0,
+  }, // withdrawable balance, will reduce with withdrawals
   savingStartDate: {
     type: Date,
   },
