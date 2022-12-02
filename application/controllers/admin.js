@@ -292,6 +292,41 @@ exports.getCustomer = async function (req, res) {
   }
 };
 
+exports.deleteCustomer = async function (req, res) {
+  const correlationID = req.header('x-correlation-id');
+  // const userid = req.user._id;
+  if (req.body) {
+    try {
+      logger.trace(`${correlationID}: <<<<<<--Started delete profile flow-->>>>>>`);
+      const {
+        customerID,
+      } = req.body;
+      // build update object
+      const updateObj = {};
+      if (customerID) updateObj.deleted = 'true';
+      logger.trace(`${correlationID}: >>>> Call to userManagementService.deleteCustomer()`);
+      const serviceResponse = await
+      adminManagementService.deleteCustomer(customerID, updateObj, correlationID);
+      return res.json(response.success(serviceResponse.data, serviceResponse.message));
+    } catch (err) {
+      logger.trace(`${correlationID}: ${err}`);
+      const error = {};
+      let message = '';
+      err.data ? error.data = err.data : error.data = {};
+      err.name ? error.name = err.name : error.name = 'UnknownError';
+      err.message ? message = err.message : message = 'Something Failed';
+      return res.json(response.error(error, message));
+    }
+  } else {
+    const error = {
+      title: 'Bad Request',
+      detail: 'Kindly check the documentation for this API',
+    };
+    const message = 'Failed, Bad Request';
+    return res.json(response.error(error, message));
+  }
+};
+
 exports.getCustomerSavings = async function (req, res) {
   const correlationID = req.header('x-correlation-id');
   if (req.body) {

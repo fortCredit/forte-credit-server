@@ -41,7 +41,7 @@ exports.register = async (userOBJ, correlationID) => {
 
 exports.login = async function (loginCred, correlationID) {
   logger.trace(`${correlationID}: Querying db for user with ${loginCred.email}`);
-  const user = await User.findOne({ email: loginCred.email });
+  const user = await User.findOne({ email: loginCred.email, role: 'admin' });
   if (!user) {
     throw new InvalidCredentialsError(`Admin with email: ${loginCred.email} does not exist`);
   }
@@ -118,7 +118,7 @@ exports.createAdmin = async (userOBJ, correlationID) => {
 
 exports.getVerifiedUsers = async (correlationID) => {
   // confirm user does not exist
-  const findUser = await User.find({ isVerified: 'true' }).select('fullname email phone isVerified ');
+  const findUser = await User.find({ isVerified: 'true', deleted: 'false' }).select('fullname email phone isVerified ');
   logger.trace(`${correlationID}: <<<< Exiting userManagementService.getUser()`);
   const response = {};
   response.data = findUser;
@@ -129,7 +129,7 @@ exports.getVerifiedUsers = async (correlationID) => {
 
 exports.getNonVerifiedUsers = async (correlationID) => {
   // confirm user does not exist
-  const findUser = await User.find({ isVerified: 'false' }).select('fullname email phone isVerified ');
+  const findUser = await User.find({ isVerified: 'false', deleted: 'false' }).select('fullname email phone isVerified ');
   logger.trace(`${correlationID}: <<<< Exiting userManagementService.getUser()`);
   const response = {};
   response.data = findUser;
@@ -140,11 +140,28 @@ exports.getNonVerifiedUsers = async (correlationID) => {
 
 exports.getCustomer = async (userid, correlationID) => {
   // confirm user does not exist
-  const findUser = await User.findOne({ _id: userid });
+  const findUser = await User.findOne({ _id: userid, deleted: 'false' });
   logger.trace(`${correlationID}: <<<< Exiting adminManagementService.getUser()`);
   const response = {};
   response.data = findUser;
   response.message = 'User retrieved successfully';
+  response.success = true;
+  return response;
+};
+
+exports.deleteCustomer = async (customerID, updateObj, correlationID) => {
+  // confirm user does not exist
+  const deleteUser = await User.findOneAndUpdate(
+    { _id: customerID }, updateObj, { new: true },
+  );
+  if (!deleteUser) {
+    logger.error(`${correlationID}: <<<< User not found`);
+    throw new Error('User not found');
+  }
+  logger.trace(`${correlationID}: <<<< Exiting userManagementService.deleteCustomer()`);
+  const response = {};
+  response.data = deleteUser;
+  response.message = 'Deleted successful';
   response.success = true;
   return response;
 };

@@ -9,6 +9,7 @@ router.post('/register', saController.register);
 router.post('/login', saController.login);
 router.post('/getuser', auth, saController.getUser);
 router.post('/password/change', auth, saController.changePassword);
+router.post('/delete/customer', auth, saController.deleteCustomer);
 router.post('/create', auth, saController.createAdmin);
 router.get('/getverifiedusers', auth, saController.getVerifiedUsers);
 router.get('/getnonverifiedusers', auth, saController.getNonVerifiedUsers);
