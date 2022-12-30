@@ -5,6 +5,7 @@ const bcrypt = require('bcryptjs');
 const User = require('../models/User.model');
 const TargetSavings = require('../models/TargetSavings.model');
 const FixedSavings = require('../models/FixedSavings.model');
+const Transaction = require('../models/Transaction.model');
 const logger = require('../utils/logger');
 const {
   UserAlreadyExistsError,
@@ -264,7 +265,7 @@ exports.getTotalTargetSavings = async (correlationID) => {
   }
 };
 
-exports.getTotalFixedSavings = async (userID, correlationID) => {
+exports.getTotalFixedSavings = async (correlationID) => {
   logger.trace(`${correlationID}: <<<< Entering FixedSavingsService.${getFuncName()}`);
   try {
     const getTotalSavings = await FixedSavings.aggregate([
@@ -287,6 +288,38 @@ exports.getTotalFixedSavings = async (userID, correlationID) => {
     const response = {};
     response.data = outputObj;
     response.message = 'Total FixedSavings retrieved Successfully';
+    response.success = true;
+    return response;
+  } catch (err) {
+    throw new Error(err.message);
+  }
+};
+
+exports.getFixedSavingsWithdrawals = async (correlationID) => {
+  logger.trace(`${correlationID}: <<<< Entering GetFixedSavingsWithdrawals.${getFuncName()}`);
+  try {
+    const listOfFixedSavingsWithdrwals = await Transaction.find({ savings: 'FIXED-SAVINGS', description: 'WITHDRAWAL', transactionStatus: 'PENDING' });
+    if (!listOfFixedSavingsWithdrwals) throw new Error('No Record Found');
+    logger.trace(`${correlationID}: <<<< Exiting userManagementService.getUser()`);
+    const response = {};
+    response.data = listOfFixedSavingsWithdrwals;
+    response.message = 'Fixed Savings Withdrawals Retrieved Successfully';
+    response.success = true;
+    return response;
+  } catch (err) {
+    throw new Error(err.message);
+  }
+};
+
+exports.getTargetSavingsWithdrawals = async (correlationID) => {
+  logger.trace(`${correlationID}: <<<< Entering GetTargetSavingsWithdrawals.${getFuncName()}`);
+  try {
+    const listOfTargetSavingsWithdrwals = await Transaction.find({ savings: 'TARGET-SAVINGS', description: 'WITHDRAWAL', transactionStatus: 'PENDING' });
+    if (!listOfTargetSavingsWithdrwals) throw new Error('No Record Found');
+    logger.trace(`${correlationID}: <<<< Exiting userManagementService.getUser()`);
+    const response = {};
+    response.data = listOfTargetSavingsWithdrwals;
+    response.message = 'Target Savings Withdrawals Retrieved Successfully';
     response.success = true;
     return response;
   } catch (err) {
