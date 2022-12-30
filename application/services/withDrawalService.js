@@ -22,88 +22,138 @@ const initializeTargetWithdrawal = async (withdrawalObj, correlationID) => {
     user, savingsID, amount, accountNumber, bankCode,
   } = withdrawalObj;
   let newTransaction = {};
+  let newWithdrawalBalance;
+  let newTotalSavingsTillDate;
 
   const getSavings = await TargetSavings.findOne({ user, _id: savingsID });
   if (!getSavings) throw new Error('Sorry savings was not found');
 
-  const totalSavings = getSavings.totalSavingsTillDate;
-  if (getSavings.daysLeft > 0 && totalSavings < getSavings.targetAmount) {
-    // getSavings.withdrawalBalance = totalSavings;
-    // await getSavings.save();
+  const totalSavings = (getSavings.totalSavingsTillDate + getSavings.withdrawalBalance);
+  if (getSavings.totalSavingsTillDate < amount) throw new Error('Sorry, withdrawal cannot be completed as you have insufficient balance');
 
-    // check balance on savings
-    if (totalSavings < amount) throw new Error('Sorry, withdrawal cannot be completed as you have insufficient balance');
-  } else {
-    // set savings to inactive
-    getSavings.status = 'INACTIVE';
-    // getSavings.withdrawalBalance = totalSavings;
-    await getSavings.save();
-    // if (totalSavings < amount) throw new Error(
-    // 'Sorry, withdrawal cannot be completed as you have insufficient balance');
-  }
-
-  // verify account details
-  const verifyAccount = await verifyAccountNumber({ accountNumber, bankCode }, correlationID);
-  if (verifyAccount) {
+  if (getSavings.savingLength > getSavings.daysLeft
+    && totalSavings < Number(getSavings.targetAmount)) {
+    // verify account details
+    const verifyAccount = await verifyAccountNumber({ accountNumber, bankCode }, correlationID);
+    if (verifyAccount) {
     // create transaction receipt
-    const createReceipt = await createTransferReceipt(
-      {
-        name: verifyAccount.account_name,
-        accountNumber,
-        bankCode,
-      },
-    );
-
-    if (createReceipt) {
-      const {
-        // eslint-disable-next-line camelcase
-        id, recipient_code, type, details,
-      } = createReceipt;
-      newTransaction = new Transaction({
-        user,
-        savingsID,
-        amount,
-        savings: 'TARGET-SAVINGS',
-        transactionType: 'DEBIT',
-        description: 'WITHDRAWAL',
-
-      });
-      const withDrawalReceipt = {
-        id,
-        recipient_code,
-        paystackType: type,
-        details: {
-          account_number: details.account_number,
-          account_name: details.account_name,
-          bank_code: details.bank_code,
-          bank_name: details.bank_name,
+      const createReceipt = await createTransferReceipt(
+        {
+          name: verifyAccount.account_name,
+          accountNumber,
+          bankCode,
         },
-      };
-      newTransaction.withDrawalReceipt = withDrawalReceipt;
-      if (totalSavings === Number(getSavings.targetAmount) || getSavings.daysLeft === 0) {
-      // initialize transfer
-        let totalSavingsROI = (getSavings.totalSavingsTillDate + getSavings.interestRate);
-        const initTransfer = await initiateTransfer({ amount: totalSavingsROI, recipient: recipient_code, reason: 'TARGETSAVINGS WITHDRAWAL' });
-        newTransaction.withDrawalReceipt.transferCode = initTransfer.transfer_code;
-        totalSavingsROI -= amount;
-        getSavings.totalSavingsTillDate = totalSavingsROI;
-        getSavings.interestRate = 0;
-        getSavings.withdrawalBalance += amount;
-      } else {
+      );
+
+      if (createReceipt) {
+        const {
+        // eslint-disable-next-line camelcase
+          id, recipient_code, type, details,
+        } = createReceipt;
+        newTransaction = new Transaction({
+          user,
+          savingsID,
+          amount,
+          savings: 'TARGET-SAVINGS',
+          transactionType: 'DEBIT',
+          description: 'WITHDRAWAL',
+
+        });
+
+        const withDrawalReceipt = {
+          id,
+          recipient_code,
+          paystackType: type,
+          details: {
+            account_number: details.account_number,
+            account_name: details.account_name,
+            bank_code: details.bank_code,
+            bank_name: details.bank_name,
+          },
+        };
+        newTransaction.withDrawalReceipt = withDrawalReceipt;
+
         const breakingFee = ((2.5 / 100) * getSavings.totalSavingsTillDate);
         const newAmount = amount + breakingFee;
-        getSavings.totalSavingsTillDate -= newAmount;
+        newTotalSavingsTillDate = getSavings.totalSavingsTillDate - newAmount;
 
-        if (getSavings.totalSavingsTillDate > 0) {
-          const initTransfer = await initiateTransfer({ amount, recipient: recipient_code, reason: 'TARGETSAVINGS WITHDRAWAL' });
-          newTransaction.withDrawalReceipt.transferCode = initTransfer.transfer_code;
-          getSavings.withdrawalBalance += amount;
-        } else throw new Error('Insufficient Funds');
+        const initTransfer = await initiateTransfer({ amount, recipient: recipient_code, reason: 'TARGETSAVINGS WITHDRAWAL' });
+        newTransaction.withDrawalReceipt.transferCode = initTransfer.transfer_code;
+        newWithdrawalBalance = getSavings.withdrawalBalance + amount;
+        await newTransaction.save();
+      }
+      await TargetSavings.updateOne({ user, savingsID },
+        {
+          $set: {
+            withdrawalBalance: newWithdrawalBalance,
+            totalSavingsTillDate: newTotalSavingsTillDate,
+          },
+        });
+    }
+  } else if (getSavings.daysLeft === 0
+    || totalSavings >= Number(getSavings.targetAmount)) {
+    // set savings to inactive
+    getSavings.status = 'INACTIVE';
+
+    // verify account details
+    const verifyAccount = await verifyAccountNumber({ accountNumber, bankCode }, correlationID);
+    if (verifyAccount) {
+    // create transaction receipt
+      const createReceipt = await createTransferReceipt(
+        {
+          name: verifyAccount.account_name,
+          accountNumber,
+          bankCode,
+        },
+      );
+
+      if (createReceipt) {
+        const {
+        // eslint-disable-next-line camelcase
+          id, recipient_code, type, details,
+        } = createReceipt;
+        newTransaction = new Transaction({
+          user,
+          savingsID,
+          amount,
+          savings: 'TARGET-SAVINGS',
+          transactionType: 'DEBIT',
+          description: 'WITHDRAWAL',
+
+        });
+        const withDrawalReceipt = {
+          id,
+          recipient_code,
+          paystackType: type,
+          details: {
+            account_number: details.account_number,
+            account_name: details.account_name,
+            bank_code: details.bank_code,
+            bank_name: details.bank_name,
+          },
+        };
+        newTransaction.withDrawalReceipt = withDrawalReceipt;
+
+        // initialize transfer
+        let totalSavingsROI = (totalSavings + getSavings.interestRate);
+        const initTransfer = await initiateTransfer({ amount, recipient: recipient_code, reason: 'TARGETSAVINGS WITHDRAWAL' });
+        newTransaction.withDrawalReceipt.transferCode = initTransfer.transfer_code;
+        totalSavingsROI -= amount;
+        newTotalSavingsTillDate = totalSavingsROI;
+        newWithdrawalBalance = getSavings.withdrawalBalance + amount;
       }
       await newTransaction.save();
     }
+    await TargetSavings.updateOne({ user, savingsID },
+      {
+        $set: {
+          withdrawalBalance: newWithdrawalBalance,
+          totalSavingsTillDate: newTotalSavingsTillDate,
+          interestRate: 0,
+        },
+      });
   }
-  await getSavings.save();
+
   logger.trace(`${correlationID}: <<<< Exiting withdrawalService.${getFuncName()}`);
   const response = {};
   response.data = newTransaction;
@@ -117,91 +167,125 @@ const initializeFixedWithdrawal = async (withdrawalObj, correlationID) => {
 
   // ensure user does not have a fortVestPlan before
   const {
-    user, savingsID, amount, accountNumber, bankCode,
+    user, amount, accountNumber, bankCode,
   } = withdrawalObj;
   let newTransaction = {};
+  let newWithdrawalBalance;
+  let newTotalSavingsTillDate;
 
-  const getSavings = await FixedSavings.findOne({ user, _id: savingsID });
-  if (!getSavings) throw new Error('Sorry savings was not found');
+  const getSavingsInfo = await FixedSavings.findOne({ user });
+  const getSavings = await FixedSavings.aggregate([
+    {
+      $match:
+      {
+        user,
+      },
+    },
+    {
+      $group:
+        {
+          _id: 'count',
+          totalSavings: { $sum: '$totalSavingsTillDate' },
+          totalInterest: { $sum: '$interestRate' },
+        },
+    },
+  ]);
 
-  const totalSavings = getSavings.totalSavingsTillDate;
-  if (totalSavings < getSavings.targetAmount) {
-    // getSavings.withdrawalBalance = totalSavings;
-    // await getSavings.save();
+  if (!getSavings) throw new Error('Sorry!!! This user doesn\'t have an active fixed savings');
 
-    // check balance on savings
-    if (totalSavings < amount) throw new Error('Sorry, withdrawal cannot be completed as you have insufficient balance');
-  } else {
-    // set savings to inactive
-    getSavings.status = 'INACTIVE';
-    // getSavings.withdrawalBalance = totalSavings;
-    await getSavings.save();
-    // if (totalSavings < amount) throw new Error(
-    // 'Sorry, withdrawal cannot be completed as you have insufficient balance');
-  }
+  const fixedSavings = getSavings[0].totalSavings <= 0 ? 0 : getSavings[0].totalSavings;
+  const fixedSavingsinterest = getSavings[0].totalInterest <= 0 ? 0 : getSavings[0].totalInterest;
+
+  let totalSavingsROI = (fixedSavings + fixedSavingsinterest); // N105000
+
+  // check balance on savings
+  if (fixedSavings < amount) throw new Error('Sorry, withdrawal cannot be completed as you have insufficient balance');
+
+  // const totalWithdraw = (fixedSavings + getSavingsInfo.withdrawalBalance);
 
   // verify account details
   const verifyAccount = await verifyAccountNumber({ accountNumber, bankCode }, correlationID);
-  if (verifyAccount) {
-    // create transaction receipt
-    const createReceipt = await createTransferReceipt(
-      {
-        name: verifyAccount.account_name,
-        accountNumber,
-        bankCode,
+  if (!verifyAccount) throw new Error('Account Not Verified');
+  // create transaction receipt
+  const createReceipt = await createTransferReceipt(
+    {
+      name: verifyAccount.account_name,
+      accountNumber,
+      bankCode,
+    },
+  );
+
+  // set savings to inactive
+  if (getSavings.savingLength === getSavings.daysLeft) {
+    getSavings.status = 'INACTIVE';
+    await FixedSavings.updateOne({ user }, { $set: { status: 'INACTIVE' } });
+
+    if (!createReceipt) throw new Error('Receipt cannot be created');
+    const {
+      // eslint-disable-next-line camelcase
+      id, recipient_code, type, details,
+    } = createReceipt;
+    newTransaction = new Transaction({
+      user,
+      amount,
+      savings: 'FIXED-SAVINGS',
+      transactionType: 'DEBIT',
+      description: 'WITHDRAWAL',
+
+    });
+    const withDrawalReceipt = {
+      id,
+      recipient_code,
+      paystackType: type,
+      details: {
+        account_number: details.account_number,
+        account_name: details.account_name,
+        bank_code: details.bank_code,
+        bank_name: details.bank_name,
       },
-    );
+    };
+    newTransaction.withDrawalReceipt = withDrawalReceipt;
 
-    if (createReceipt) {
-      const {
-        // eslint-disable-next-line camelcase
-        id, recipient_code, type, details,
-      } = createReceipt;
-      newTransaction = new Transaction({
-        user,
-        savingsID,
-        amount,
-        savings: 'FIXED-SAVINGS',
-        transactionType: 'DEBIT',
-        description: 'WITHDRAWAL',
+    // initialize transfer
+    const initTransfer = await initiateTransfer({
+      amount: Math.round(totalSavingsROI).toString(),
+      recipient: recipient_code,
+      reason: 'FIXED-SAVINGS WITHDRAWAL',
+    });
 
-      });
-      const withDrawalReceipt = {
-        id,
-        recipient_code,
-        paystackType: type,
-        details: {
-          account_number: details.account_number,
-          account_name: details.account_name,
-          bank_code: details.bank_code,
-          bank_name: details.bank_name,
+    newTransaction.withDrawalReceipt.transferCode = initTransfer.transfer_code;
+    totalSavingsROI -= amount;
+    getSavings.totalSavingsTillDate = totalSavingsROI;
+    getSavings.interestRate = 0;
+    newWithdrawalBalance = getSavingsInfo.withdrawalBalance + amount;
+    await FixedSavings.updateOne({ user },
+      {
+        $set: {
+          withdrawalBalance: newWithdrawalBalance,
+          totalSavingsTillDate: totalSavingsROI,
+          interestRate: 0,
         },
-      };
-      newTransaction.withDrawalReceipt = withDrawalReceipt;
-      if (totalSavings === Number(getSavings.targetAmount)) {
-      // initialize transfer
-        let totalSavingsROI = (getSavings.totalSavingsTillDate + getSavings.interestRate);
-        const initTransfer = await initiateTransfer({ amount: totalSavingsROI, recipient: recipient_code, reason: 'TARGETSAVINGS WITHDRAWAL' });
-        newTransaction.withDrawalReceipt.transferCode = initTransfer.transfer_code;
-        totalSavingsROI -= amount;
-        getSavings.totalSavingsTillDate = totalSavingsROI;
-        getSavings.interestRate = 0;
-        getSavings.withdrawalBalance += amount;
-      } else {
-        const breakingFee = ((2.5 / 100) * getSavings.totalSavingsTillDate);
-        const newAmount = amount + breakingFee;
-        getSavings.totalSavingsTillDate -= newAmount;
+      });
+  } else {
+    const breakingFee = ((2.5 / 100) * getSavings.totalSavingsTillDate);
+    const newAmount = amount + breakingFee;
 
-        if (getSavings.totalSavingsTillDate > 0) {
-          const initTransfer = await initiateTransfer({ amount, recipient: recipient_code, reason: 'TARGETSAVINGS WITHDRAWAL' });
-          newTransaction.withDrawalReceipt.transferCode = initTransfer.transfer_code;
-          getSavings.withdrawalBalance += amount;
-        } else throw new Error('Insufficient Funds');
-      }
-      await newTransaction.save();
-    }
+    if (getSavings.totalSavingsTillDate > newAmount) {
+      const initTransfer = await initiateTransfer({ amount: Math.round(amount).toString(), recipient: createReceipt.recipient_code, reason: 'FIXED-SAVINGS WITHDRAWAL' });
+      newTransaction.withDrawalReceipt.transferCode = initTransfer.transfer_code;
+      newWithdrawalBalance = getSavingsInfo.withdrawalBalance + newAmount;
+      newTotalSavingsTillDate = getSavings.totalSavingsTillDate - newAmount;
+      await FixedSavings.updateOne({ user },
+        {
+          $set: {
+            withdrawalBalance: newWithdrawalBalance,
+            totalSavingsTillDate: newTotalSavingsTillDate,
+          },
+        });
+    } else throw new Error('Insufficient Funds');
   }
-  await getSavings.save();
+  await newTransaction.save();
+
   logger.trace(`${correlationID}: <<<< Exiting withdrawalService.${getFuncName()}`);
   const response = {};
   response.data = newTransaction;
@@ -217,7 +301,7 @@ const verifyWithdrawal = async (transactionID, correlationID) => {
   let message = 'Withdrawal Pending';
   const verifyRes = await
   verifyTransfer(getTransaction.withDrawalReceipt.transferCode, correlationID);
-  // console.log(verifyRes);
+  console.log(verifyRes);
   if (verifyRes.status === 'success') {
     getTransaction.status = 'COMPLETED';
     getTransaction.save();

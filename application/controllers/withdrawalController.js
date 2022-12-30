@@ -68,14 +68,13 @@ exports.initializeFixedWithdrawal = async (req, res) => {
     );
     logger.trace(`${correlationID}: Validating required fields`);
     await requiredFieldValidator(
-      ['amount', 'accountNumber', 'savingsID', 'bankCode'],
+      ['amount', 'accountNumber', 'bankCode'],
       Object.keys(req.body),
       correlationID,
     );
     // validate required fields
     const {
       amount,
-      savingsID,
       accountNumber,
       bankCode,
     } = req.body;
@@ -83,8 +82,6 @@ exports.initializeFixedWithdrawal = async (req, res) => {
     const withdrawalObj = {};
     withdrawalObj.amount = amount;
     withdrawalObj.user = userID;
-    withdrawalObj.amount = amount;
-    withdrawalObj.savingsID = savingsID;
     withdrawalObj.accountNumber = accountNumber;
     withdrawalObj.bankCode = bankCode;
     const transactionDetails = await withdrawalService.initializeFixedWithdrawal(
