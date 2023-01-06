@@ -301,15 +301,14 @@ const verifyWithdrawal = async (transactionID, correlationID) => {
   let message = 'Withdrawal Pending';
   const verifyRes = await
   verifyTransfer(getTransaction.withDrawalReceipt.transferCode, correlationID);
-  console.log(verifyRes);
-  if (verifyRes.status === 'success') {
-    getTransaction.status = 'COMPLETED';
+  if (verifyRes.data.status === 'success') {
+    getTransaction.transactionStatus = 'COMPLETED';
     getTransaction.save();
     message = 'Withdrawal completed';
   }
   logger.trace(`${correlationID}: <<<< Exiting withdrawalService.${getFuncName()}`);
   const response = {};
-  response.data = {};
+  response.data = getTransaction;
   response.message = message;
   response.success = true;
   return response;

@@ -42,7 +42,7 @@ exports.register = async (userOBJ, correlationID) => {
 
 exports.login = async function (loginCred, correlationID) {
   logger.trace(`${correlationID}: Querying db for user with ${loginCred.email}`);
-  const user = await User.findOne({ email: loginCred.email, role: 'admin' });
+  const user = await User.findOne({ email: loginCred.email, role: 'SUPERADMIN' });
   if (!user) {
     throw new InvalidCredentialsError(`Admin with email: ${loginCred.email} does not exist`);
   }
